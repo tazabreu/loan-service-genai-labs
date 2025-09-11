@@ -108,3 +108,2339 @@ Summary:
 
 ---
 
+_**User (2025-09-11 02:20Z)**_
+
+How to run these e2e tests?
+
+---
+
+_**Assistant**_
+
+<think><details><summary>Thought Process</summary>**Running Maven effectively**
+
+When running Maven in reactor mode with the flags -am and -pl for e2e-tests, it builds automatically. I recommend using `mvn -pl e2e-tests -am verify` to run the failsafe integration-test and verify process. If you're on Apple Silicon, the Redpanda image supports arm64. It's also important to remember that Failsafe runs integration tests during the verify phase. To run from an IDE, execute the IT class as a JUnit test, but make sure Docker and Testcontainers are set up.
+**Running tests with Docker**
+
+I need to note that the tests use Testcontainers, which requires Docker to run. It's important to open the necessary ports, like the fixed port 29092. Additionally, enabling `testcontainers.reuse.enable=true` can be helpful, but it’s not strictly necessary. The user is asking, "How to run," so I can provide simple commands without executing them. I should also refrain from unnecessary tool usage or status updates. I'll keep it straightforward with bullet points for commands.
+**Preparing Maven commands**
+
+I’m focusing on providing clear commands without using tool calls. First, ensure Docker is running. From the repository root, there are a few options:
+
+Option A is for the e2e module: `mvn -q -pl e2e-tests -am clean verify`. Here, `-pl` selects the module, `-am` builds dependencies, and `verify` triggers Failsafe.
+
+Option B runs tests from a specific class: `mvn -q -pl e2e-tests -am -Dit.test=FullLifecycleIT verify`, using the `it.test` property for selection.
+
+Option C runs the whole reactor, but it’s simpler to just run `mvn clean verify` for both unit and integration tests.
+**Running tests with Failsafe**
+
+Running Failsafe in the e2e-tests might take longer, but it's a valid alternative. On macOS, ensure that Kafka binds to host port 29092, which needs to be free; otherwise, the test will fail. Also, confirm that JDK 21 is installed. 
+
+Here’s a quick step-by-step:
+
+1. Start Docker Desktop.
+2. Run `mvn -q -pl e2e-tests -am clean verify` from the root.
+3. To rerun faster, use `mvn -q -pl e2e-tests -am -DskipTests=false -DskipITs=false verify`.
+
+For IDE use, right-click on FullLifecycleIT and run it. If Docker isn't available, you could set `export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock`. If port 29092 is in conflict, you'll need to kill or change the test. For users on Apple Silicon, the latest Redpanda supports arm64.
+**Providing concise commands**
+
+This is a straightforward query, so I can summarize without explaining my search process. I won't include any status updates since I'm not using any tools. For a clear answer, I'll format it nicely with Markdown and bullet points:
+
+- **Pre-reqs**: JDK 21, Maven, Docker.
+- **Main command**: `mvn -q -pl e2e-tests -am clean verify`.
+- **Alternative**: Run the whole project with `mvn clean verify`.
+- **Filter specific IT**: Use `mvn -q -pl e2e-tests -am -Dit.test=FullLifecycleIT verify`.
+- **Run from IDE**: Right-click on FullLifecycleIT and run. 
+- **Port note**: Ensure port 29092 is free to avoid conflicts. 
+
+This keeps everything concise and to the point!</details></think>
+
+---
+
+### Quick start
+- **Prereqs**: JDK 21, Maven, Docker Desktop running (Testcontainers needs Docker).
+- **From repo root**, run just the E2E module (builds deps and runs Failsafe ITs):
+```bash
+mvn -q -pl e2e-tests -am clean verify
+```
+
+### Variants
+- **Run the single test class**:
+```bash
+mvn -q -pl e2e-tests -am -Dit.test=FullLifecycleIT verify
+```
+- **Run everything (unit + E2E) across all modules**:
+```bash
+mvn -q clean verify
+```
+- **From IDE**: open `e2e-tests`, right-click `FullLifecycleIT` and run as JUnit test (Docker must be running).
+
+### Notes
+- The test binds Kafka to host port `29092`; ensure it’s free before running.
+
+---
+
+_**User (2025-09-11 02:20Z)**_
+
+Explain these -q -pl -am -Dit stuff
+
+---
+
+_**Assistant**_
+
+<think><details><summary>Thought Process</summary>**Explaining Maven Flags**
+
+I need to clarify some Maven flags: 
+
+- **-q**: Quiet mode, reduces output noise.
+- **-pl**: Projects list, specifies which projects to build.
+- **-am**: Also make, builds included dependencies.
+- **-Dproperty**: Custom properties. For instance:
+  - **-Dtest**: Runs unit tests.
+  - **-Dit.test**: Runs integration tests with Failsafe vs Surefire.
+
+It's important to differentiate between **-DskipTests** (skips unit tests) and **-DskipITs** (skips integration tests). Keeping this concise and clear should help the user understand!
+**Clarifying Maven Flags**
+
+I need to explain some Maven flags clearly:
+
+- **-q**: Enables quiet output, reducing log noise.
+- **-pl**: Specifies which modules to build, using artifact IDs or relative paths, like `-pl e2e-tests`.
+- **-am**: Also make, builds required dependencies.
+- **-D...**: Used for system properties, like `-Dtest=...` for Surefire and `-Dit.test=...` for Failsafe. The latter supports patterns with commas and wildcards.
+
+It's essential to note the difference between **-DskipTests** (skips unit tests) and **-DskipITs** (skips integration tests). Keeping it concise will help users comprehend these flags!
+**Summarizing Maven Flags**
+
+Since the user needs clear information, I can provide a concise bullet summary without being redundant. 
+
+### Key Maven Flags:
+- **-q**: Use this to enable quiet output.
+- **-pl**: Specify which module to build.
+- **-am**: Builds required dependencies.
+- **-Dit.test**: Use this to select integration tests.
+
+I’ll format these with Markdown rules, using bold for items and backticks for code while keeping it succinct. This should help the user quickly understand the key points!</details></think>
+
+---
+
+### Maven flags you saw
+
+- **`-q` (quiet)**: Reduces Maven log noise. Remove it when troubleshooting.
+
+- **`-pl` (projects list)**: Build only specified module(s) in a multi-module repo.
+  - Example: `-pl e2e-tests` builds just the `e2e-tests` module.
+  - Can take multiple: `-pl e2e-tests,loan-api`.
+
+- **`-am` (also make)**: When used with `-pl`, also builds required dependencies of those modules.
+  - Example: `-pl e2e-tests -am` will first build `loan-api` and `loan-notification-service` if `e2e-tests` depends on them.
+
+- **`-D...` (system property)**: Passes properties to Maven/plugins.
+  - **`-Dit.test=...`**: Selects which Failsafe integration tests to run (classes ending with `IT`).
+    - Examples:
+      - `-Dit.test=FullLifecycleIT`
+      - `-Dit.test=FullLifecycleIT#fullLifecycle_emitsKafkaEvents`
+      - Patterns: `-Dit.test=*LifecycleIT`
+  - Related:
+    - `-Dtest=...` is for Surefire (unit tests), not Failsafe.
+    - `-DskipTests` skips unit tests; `-DskipITs` (or `-DskipITs=true`) skips integration tests.
+
+### Examples
+- Run only E2E ITs in the module (quiet):
+```bash
+mvn -q -pl e2e-tests -am clean verify
+```
+- Run a single E2E class:
+```bash
+mvn -q -pl e2e-tests -am -Dit.test=FullLifecycleIT verify
+```
+
+- If debugging, drop `-q` to see full logs.
+
+- In short: `-q` quiets logs; `-pl` picks module(s); `-am` builds their deps; `-Dit.test` selects Failsafe ITs.
+
+---
+
+_**User (2025-09-11 02:20Z)**_
+
+Go ahead and run the integration tests... walk me through its structure as well!
+
+---
+
+_**Assistant**_
+
+<think><details><summary>Thought Process</summary>**Planning integration tests**
+
+I need to run the integration tests and take a good look at its structure. I'll use the tool to run commands on the user's system and remember to include a status update before doing so. Since this is a multi-step task, I think creating a to-do list is smart: like running the e2e-tests, fixing any issues, and explaining the structure. I'll also keep in mind that building might take some time, but I want to see the output!
+**Designing tool commands**
+
+When working on tool design, I notice that the run_terminal_cmd returns output, which can be truncated if it’s long. I'm thinking about running with the -q option to reduce log noise, but for debugging, it might be better to drop that. Since I want to see everything as I walk through the process, I’ll run it without -q and add | cat to keep output continuous. I’ll set the explanation and provide step updates after running it. Then, I’ll need to walk through the structure!
+**Explaining module structure**
+
+I need to explain the module structure clearly. The parent POM modules and the e2e-tests POM use the failsafe plugin, which includes **/*IT.java. It has test-scope dependencies on the loan-api and loan-notification-service, and it uses Testcontainers for Postgres and Kafka. The test class `FullLifecycleIT`, marked with @Testcontainers, utilizes static containers for Postgres and a GenericContainer for Redpanda, binding to host port 29092. I need to simulate a full flow by hitting endpoints and include some utility methods and running command details. Code citations will be essential, along with proper formatting to avoid clutter!
+**Creating a task list**
+
+I’m planning to include a couple of precise quotes, like the @Container definitions and the test method, as well as the failsafe plugin lines from e2e-tests/pom (lines 67-85). I’ll cite these segments properly with the specified format. First, I'll set up a to-do list: running the e2e integration tests, diagnosing any failures, and explaining the module structure and flow. I'll mark the first task as in progress and the others as pending. Next, I plan to run the command with Maven and ensure Docker is up and running since Testcontainers need it. The user said, "Go ahead and run," so I will!
+**Running the command cautiously**
+
+I realize that if Docker isn't available, the test might fail, but I'm going to proceed anyway. It's important that we can detect any errors that arise and report them appropriately. So, I'll run the command and keep an eye on the output to identify any issues that might come up. Let’s see how this unfolds and make sure to address any problems if they occur!</details></think>
+
+---
+
+I'll run the E2E integration tests from the repo root, then explain the `e2e-tests` module’s structure and the `FullLifecycleIT` flow with targeted code excerpts.
+
+---
+
+## Todo List
+
+- [-] Run E2E integration tests for e2e-tests module
+- [ ] Diagnose and report any test failures
+- [ ] Explain e2e-tests module structure and FullLifecycleIT flow
+
+---
+
+I'm going to execute the Maven command to run the e2e-tests integration tests from the repository root, ensuring dependencies are built.
+
+---
+
+```bash
+cd /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs && mvn -q -pl e2e-tests -am clean verify
+```
+
+```
+[ERROR] [ERROR] Could not find the selected project in the reactor: e2e-tests @ 
+[ERROR] Could not find the selected project in the reactor: e2e-tests -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MavenExecutionException
+```
+
+---
+
+<think><details><summary>Thought Process</summary>**Analyzing Maven issues**
+
+I tried running a command with Maven to verify the e2e-tests module but faced an issue where it couldn’t find the module. I noticed that the directory exists and is listed as untracked in git, which shouldn't cause a problem. The pom.xml includes the e2e-tests module, so it should work. However, I'm getting an error about not finding the project, which could mean that the exact artifactId or relative path needs to be precise. I'll run the command again without the quiet flag to check the logs.
+**Investigating Maven module issues**
+
+I realized that when using -pl, I might need to specify the artifactId with a prefix, like `-pl :e2e-tests`. The error suggests that Maven doesn't recognize e2e-tests as part of the reactor, which is puzzling since the pom.xml shows it included. Maybe the working directory isn’t set correctly, but it should be, based on the command output. Maven resolves modules by GAV coordinates or relative paths, so I’ll check if there are any spaces or consider using the Maven wrapper.
+**Diagnosing Maven module recognition**
+
+I'm using the system Maven, which is fine, and I want to list the modules recognized by it. I think I need to run a command like `mvn -q help:evaluate -Dexpression=project.modules -DforceStdout` to see which modules are recognized. Also, I’ll run `ls` to confirm the e2e-tests path exists. Although the terminal can only run one command at a time, we can execute commands sequentially. I need to keep updating the TODO list while working through tasks, starting with diagnosing that module selection error first.
+**Running Maven evaluation**
+
+I'm going to execute `mvn -q -DforceStdout help:evaluate -Dexpression=project.modules` to check which modules Maven recognizes. Afterward, I might run a standard verify without the -pl option to see if the root builds correctly. However, this will run unit tests in other modules, which could take some time. So, for now, let's focus on running the help evaluation first and see what modules come back.</details></think>
+
+---
+
+I saw Maven couldn't find the module via -pl. I'll first inspect what modules Maven sees from the root, and verify the folder exists, then rerun with the correct selector.
+
+---
+
+```bash
+pwd && ls -la && echo '--- modules via help:evaluate ---' && mvn -DforceStdout -q help:evaluate -Dexpression=project.modules && echo '--- reactor projects ---' && mvn -q -DforceStdout help:evaluate -Dexpression=reactor.projects && echo '--- done ---'
+```
+
+```
+/Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs
+total 64
+drwxr-xr-x  18 tazabreu  staff    576 Sep 11 01:12 .
+drwxr-xr-x  38 tazabreu  staff   1216 Sep 10 21:11 ..
+-rw-r--r--@  1 tazabreu  staff    110 Sep 10 21:11 .cursorindexingignore
+drwxr-xr-x@ 13 tazabreu  staff    416 Sep 11 01:39 .git
+drwxr-xr-x@  3 tazabreu  staff     96 Sep 10 21:26 .github
+-rw-r--r--@  1 tazabreu  staff    131 Sep 10 21:26 .gitignore
+drwxr-xr-x@  5 tazabreu  staff    160 Sep 10 21:11 .specstory
+drwxr-xr-x@  3 tazabreu  staff     96 Sep 10 23:55 .vscode
+-rw-r--r--@  1 tazabreu  staff   3767 Sep 10 21:31 AGENTS.md
+drwxr-xr-x@  2 tazabreu  staff     64 Sep 10 21:26 dashboards
+drwxr-xr-x@  5 tazabreu  staff    160 Sep 11 00:30 docker
+drwxr-xr-x@  4 tazabreu  staff    128 Sep 11 01:18 e2e-tests
+drwxr-xr-x@  6 tazabreu  staff    192 Sep 10 21:46 loan-api
+drwxr-xr-x@  5 tazabreu  staff    160 Sep 10 21:27 loan-events
+drwxr-xr-x@  6 tazabreu  staff    192 Sep 10 21:46 loan-notification-service
+-rw-r--r--@  1 tazabreu  staff   2990 Sep 11 01:18 pom.xml
+-rw-r--r--@  1 tazabreu  staff   1652 Sep 11 00:31 README.md
+-rw-r--r--@  1 tazabreu  staff  10706 Sep 11 00:31 TASKS.md
+--- modules via help:evaluate ---
+<strings>
+  <string>loan-events</string>
+  <string>loan-api</string>
+  <string>loan-notification-service</string>
+</strings>--- reactor projects ---
+null object or invalid expression--- done ---
+```
+
+---
+
+<think><details><summary>Thought Process</summary>**Investigating Maven issue**
+
+I tried running Maven with the command including the e2e-tests module, but it reported that the module isn't in the reactor. The root pom indicated it should include e2e-tests, but the help:evaluate command shows only three modules, which is puzzling. This suggests the root pom might have been modified since I last checked. I'll need to re-open the pom.xml to verify its current contents, as something seems off regarding the inclusion of e2e-tests.</details></think>
+
+---
+
+I'll re-open the root `pom.xml` to confirm whether `e2e-tests` is currently listed as a module, then adjust the command accordingly.
+
+---
+
+Read file: undefined
+
+---
+
+<think><details><summary>Thought Process</summary>**Running integration tests**
+
+I need to run integration tests, but it seems the e2e-tests module isn’t included in the root modules anymore. The repo layout shows it exists, yet the current root pom lacks it. Earlier I noticed a modified pom.xml indicating that e2e-tests might have been removed. To proceed with the tests, I plan to run Maven directly from the e2e-tests module path. I need to execute `mvn verify` from there and ensure Docker is running on my Mac.
+**Executing tests**
+
+I’m all set to run the tests! They’ll pull images and start containers, along with two Spring Boot apps. I want to run this from the module directory and will use the `run_terminal_cmd`. I need to keep providing status updates before each tool call. Since I've done that already, I’ll continue with the next step. I'll run `cd e2e-tests && mvn -q clean verify`, using the absolute path as recommended. Let's execute this!</details></think>
+
+---
+
+I'm going to run the E2E tests by invoking Maven inside the `e2e-tests` module directory since it's not listed in the root reactor modules.
+
+---
+
+```bash
+cd /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests && mvn -q clean verify
+```
+
+```
+[ERROR] The goal you specified requires a project to execute but there is no POM in this directory (/Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests). Please verify you invoked Maven from the correct directory. -> [Help 1]                                                                             
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MissingProjectException
+```
+
+---
+
+<think><details><summary>Thought Process</summary>**Planning Maven Commands**
+
+I need to avoid a full build by using `mvn -q -DskipTests install` to install the three modules in my local repository. Next, I can run the end-to-end tests using `mvn -f e2e-tests/pom.xml -q verify`. The root POM doesn’t include e2e-tests, so I'll ensure `pom.xml` exists in e2e-tests first. Building these modules requires docker running on macOS, but if Docker isn’t available, Testcontainers will fail. I'll sequentially execute commands and ensure to capture any failures for reporting.</details></think>
+
+---
+
+I'll check whether `e2e-tests/pom.xml` exists on disk, then build the core modules to the local repo, and finally run the E2E module via its POM path.
+
+---
+
+```bash
+cd /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs && ls -la e2e-tests && echo '--- building core modules ---' && mvn -q -DskipTests install && echo '--- running e2e-tests ---' && mvn -q -f e2e-tests/pom.xml verify
+```
+
+```
+total 0
+drwxr-xr-x@  4 tazabreu  staff  128 Sep 11 01:18 .
+drwxr-xr-x  18 tazabreu  staff  576 Sep 11 01:12 ..
+drwxr-xr-x@  3 tazabreu  staff   96 Sep 11 01:12 src
+drwxr-xr-x@  5 tazabreu  staff  160 Sep 11 01:17 target
+--- building core modules ---
+--- running e2e-tests ---
+POM file e2e-tests/pom.xml specified with the -f/--file command line argument does not exist
+[ERROR] [ERROR] Some problems were encountered while processing the POMs:
+[FATAL] Non-readable POM /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/pom.xml: /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/pom.xml (No such file or directory) @ 
+ @ 
+[ERROR] The build could not read 1 project -> [Help 1]
+[ERROR]   
+[ERROR]   The project  (/Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/pom.xml) has 1 error                                                                                                   
+[ERROR]     Non-readable POM /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/pom.xml: /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/pom.xml (No such file or directory)                                                                                                          
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/ProjectBuildingException
+```
+
+---
+
+<think><details><summary>Thought Process</summary>**Troubleshooting integration tests**
+
+I need to run integration tests, but the command failed because it says e2e-tests/pom.xml is not found. However, I previously read the file successfully, so it's odd. Wait, the terminal insists it doesn't exist, and I'm wondering if there's a case-sensitive issue with the path. The directory only shows src and target, even though it should have pom.xml. Is it possible that the file exists in the virtual view but not physically on the disk? That would explain the discrepancy!
+**Reconciling module setup**
+
+I need to reconcile the situation by explaining the need to save e2e-tests/pom.xml to disk or add the module to the root. Alternatively, running tests via the IDE could be an option, but they want a walkthrough. It looks like I need to ensure that e2e-tests is recognized as a module and that pom.xml exists. The terminal insists the file isn’t present, even though I’ve viewed it before as being 2.6KB. Maybe it’s not saved properly yet? I'll propose creating e2e-tests/pom.xml based on earlier content and updating the root pom.xml accordingly.
+**Updating tasks for XML edits**
+
+The developer instructions say to proceed, but I need to ensure we update the TODO list and preserve the correct indentation using two spaces for XML. Before making new edits, I should address the TODO list. We're currently focused on running tests, and it seems we need an extra task to "Add e2e-tests module to root pom and ensure pom.xml exists," although it feels like extra overhead. I could update the list to include a task for restoring the e2e-tests pom, then decide if I want to mark run-e2e-tests as pending or keep it in progress while starting the new module task.
+**Updating todos and dependencies**
+
+I need to update the TODOs by setting run-e2e-tests back to pending and adding a new task for "Add e2e-tests to reactor and create pom" and marking it in progress. It's also important to provide STATUS UPDATE lines before tool calls, which we did earlier, so that's good. I'm planning to create the pom.xml content using apply_patch, ensuring it matches what we saw before. I'll also update the root pom by inserting <module>e2e-tests</module> under the modules section, since it’s currently missing, then I'll run mvn -q -pl e2e-tests -am clean verify. I also need to ensure Docker is running and check the loan-notification-service dependency version property in the e2e-tests pom.
+**Creating files and handling builds**
+
+I need to ensure that the file content includes the <parent> tag for com.example loan-system. I should create the necessary file and then run the build. It seems like I could try creating both files using apply_patch in a single call, but since apply_patch only supports one file at a time, I might need to invoke it twice. Although, I could parallelize those calls if needed. We won’t check lints since it’s not required for Maven. 
+
+Next, I’ll provide a structure walkthrough for the test class FullLifecycleIT. It sets up Testcontainers for Postgres and Redpanda and starts two Spring Boot apps. I'll also include code excerpts for clarity while keeping formatting minimal. I need to ensure we're logging status updates before and after tool calls, as well as before and after the run, along with a summary. Time to update the TODO list!</details></think>
+
+---
+
+I noticed the module isn't part of the root reactor and the `e2e-tests/pom.xml` file isn't present on disk, so I'll add the module to the root `pom.xml` and create the `e2e-tests/pom.xml`, then run the integration tests.
+
+---
+
+## Todo List
+
+- [ ] Run E2E integration tests for e2e-tests module
+- [ ] Diagnose and report any test failures
+- [ ] Explain e2e-tests module structure and FullLifecycleIT flow
+- [-] Add e2e-tests to root reactor and create its pom.xml
+
+---
+
+<think><details><summary>Thought Process</summary>**Investigating file existence**
+
+I need to be cautious because the user attached a folder path, and we previously accessed /e2e-tests/pom.xml, which had content lines 1-88. That file was in the initial snapshot but is currently unfindable on disk. The project snapshot confirmed its existence within the e2e-tests directory, yet the terminal shows no pom.xml, only src and target directories. It might not be saved or possibly ignored? The earlier git status showed e2e-tests/ as untracked without detailing specific files. I'm puzzled!
+**Identifying workspace discrepancies**
+
+I'm noticing a mismatch, where it seems the tools are reading from a virtual workspace. The instructions suggest using absolute paths, which I'm following. However, the run_terminal_cmd accesses the user's actual file system, while the read_file tool reads from a Cursor workspace. This discrepancy might mean that the file is open in the IDE but not saved. The terminal indicates that pom.xml is missing, which raises questions about whether it truly exists on disk. I'm a bit puzzled about this consistency issue!
+**Creating pom.xml for tests**
+
+I need a pom.xml to run tests, so I have to create one. However, I must use the apply_patch tool for edits and follow the repository conventions. There's a concern because the root pom initially included e2e-tests in the modules, but later reads show it's been excluded, leading to a mismatch. The git status indicated that root pom.xml was modified, explaining why Maven can't see the e2e-tests. Since e2e-tests/pom.xml is missing on disk, it seems like it needs to be reconstructed from earlier content.
+**Preparing to run tests**
+
+I should avoid outputting code directly in the chat. We need to use the apply_patch tool to create the e2e-tests/pom.xml file and modify the root pom to include it. Before making any edits, I’ll reconcile the to-do list and set "wire-e2e-module" to in_progress. I’ll confirm that the necessary test files in e2e-tests/src/test/java exist, and ensure the pom parent references align correctly with version numbers. Running tests will involve Docker Testcontainers, which rely on Docker, so I hope it's running on the user's machine. I'll execute `mvn -q -pl e2e-tests -am clean verify`.
+**Updating e2e-tests module**
+
+The test involves starting a Redpanda container, which uses host port 29092, so we should mention the risk of conflicts and instruct to ensure that the port is free before proceeding. I'll provide a status update to keep track of progress.
+
+First, I'll add back the e2e-tests module and recreate its pom.xml. I'll use apply_patch to create the e2e-tests/pom.xml and update the root pom to include this module. It’s important to re-read for context and then run Maven to build.
+
+If the tests pass, I’ll update the to-dos, marking "wire-e2e-module" as completed and set "run-e2e-tests" to in_progress. Finally, I’ll offer a concise explanation of the e2e-tests structure, including dependencies and container usage, while sticking to minimal output.</details></think>
+
+---
+
+I’m going to add the `e2e-tests` module back into the root reactor and recreate its `pom.xml` with the correct dependencies and Failsafe configuration, then run the tests.
+
+---
+
+
+
+---
+
+
+
+---
+
+## Todo List
+
+- [-] Run E2E integration tests for e2e-tests module
+- [ ] Diagnose and report any test failures
+- [ ] Explain e2e-tests module structure and FullLifecycleIT flow
+- [x] Add e2e-tests to root reactor and create its pom.xml
+
+---
+
+I added `e2e-tests` to the root reactor and created its `pom.xml`. Now I’ll run the e2e-tests integration tests from the root, building dependent modules as needed.
+
+---
+
+```bash
+cd /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs && mvn -q -pl e2e-tests -am clean verify
+```
+
+```
+[ERROR] [ERROR] Some problems were encountered while processing the POMs:
+[FATAL] Non-parseable POM /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/pom.xml: processing instruction can not have PITarget with reserved xml name (position: END_TAG seen ...</build>\n</project>\n\n<?xml ... @88:7)  @ line 88, column 7                                                           
+ @ 
+[ERROR] The build could not read 1 project -> [Help 1]
+[ERROR]   
+[ERROR]   The project  (/Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/pom.xml) has 1 error                                                                                                   
+[ERROR]     Non-parseable POM /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/pom.xml: processing instruction can not have PITarget with reserved xml name (position: END_TAG seen ...</build>\n</project>\n\n<?xml ... @88:7)  @ line 88, column 7 -> [Help 2]                                           
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/ProjectBuildingException
+[ERROR] [Help 2] http://cwiki.apache.org/confluence/display/MAVEN/ModelParseException
+```
+
+---
+
+<think><details><summary>Thought Process</summary>**Fixing XML Parse Error**
+
+I need to address an XML parse error in the e2e-tests' pom.xml. The message indicates that there's an extra XML declaration, likely a stray `<?xml...` after the closing project. I’ll check for a possible extra newline or something that was appended incorrectly around line 88. To proceed, I'll read the file to inspect its contents and then apply a patch to fix the stray content. After that, I’ll rerun Maven and provide a status update.</details></think>
+
+---
+
+I'll open the `e2e-tests/pom.xml` to fix the XML parsing issue, then rerun the tests.
+
+---
+
+Read file: undefined
+
+---
+
+<think><details><summary>Thought Process</summary>**Fixing XML duplication**
+
+It looks like I accidentally duplicated the entire content of the pom.xml, with a second XML document at the end. My first step is to remove that duplicate block. I also want to make sure the dependencies include the correct scopes, like both loan-api and loan-notification-service having test scope in the first block. I'll edit the file to keep the first one. After that, I'll apply a patch and run the build. Lastly, I need to ensure Docker is running for the tests, and the FullLifecycleIT may face issues if the port is already in use.
+**Clarifying loan-notification-service dependencies**
+
+The loan-notification-service artifact is a Spring Boot app, which might not be used as a direct dependency, but I realize it needs to be on the test classpath since FullLifecycleIT imports LoanNotificationServiceApplication from that module. I’ll keep the test scope for the e2e module and remove the second duplicate that lost its scopes. Also, checking for lints doesn’t apply to Maven POM files, so I’ll proceed to apply a patch to keep just the first XML document before running the tests again. After that, I’ll provide an overview of its structure.
+**Updating test status**
+
+I’ve set the run-e2e-tests in progress and need to diagnose any pending issues before moving on. I’ll run the tests and then update accordingly. It’s important to include status updates as specified before making any tool calls. I realize I’ve been adding micro-updates as we go, and I want to ensure that continues. Now, it’s time to apply the patch and keep everything on track. Let's proceed with that!</details></think>
+
+---
+
+
+
+---
+
+```bash
+cd /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs && mvn -q -pl e2e-tests -am clean verify
+```
+
+```
+WARNING: A Java agent has been loaded dynamically (/Users/tazabreu/.m2/repository/net/bytebuddy/byte-buddy-agent/1.14.19/byte-buddy-agent-1.14.19.jar)                                                                
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning                                                                                                      
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information                                                                                                     
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended                                                                                     
+01:47:44.989 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.example.loan.api.web.LoanApiControllerTest]: LoanApiControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.                                                                                            
+01:47:45.090 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.example.loan.api.LoanApiApplication for test class com.example.loan.api.web.LoanApiControllerTest                                                                                         
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.3)
+
+{"@timestamp":"2025-09-11T01:47:45.474383-03:00","@version":"1","message":"HV000001: Hibernate Validator 8.0.1.Final","logger_name":"org.hibernate.validator.internal.util.Version","thread_name":"background-preinit","level":"INFO","level_value":20000,"service":"loan-api"}                                                  
+{"@timestamp":"2025-09-11T01:47:45.494665-03:00","@version":"1","message":"Starting LoanApiControllerTest using Java 21.0.1 with PID 36989 (started by tazabreu in /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/loan-api)","logger_name":"com.example.loan.api.web.LoanApiControllerTest","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                     
+{"@timestamp":"2025-09-11T01:47:45.495468-03:00","@version":"1","message":"No active profile set, falling back to 1 default profile: \"default\"","logger_name":"com.example.loan.api.web.LoanApiControllerTest","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                   
+{"@timestamp":"2025-09-11T01:47:46.071237-03:00","@version":"1","message":"Initializing Spring TestDispatcherServlet ''","logger_name":"org.springframework.boot.test.mock.web.SpringBootMockServletContext","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                       
+{"@timestamp":"2025-09-11T01:47:46.071529-03:00","@version":"1","message":"Initializing Servlet ''","logger_name":"org.springframework.test.web.servlet.TestDispatcherServlet","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                                     
+{"@timestamp":"2025-09-11T01:47:46.072643-03:00","@version":"1","message":"Completed initialization in 1 ms","logger_name":"org.springframework.test.web.servlet.TestDispatcherServlet","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                            
+{"@timestamp":"2025-09-11T01:47:46.08542-03:00","@version":"1","message":"Started LoanApiControllerTest in 0.945 seconds (process running for 2.845)","logger_name":"com.example.loan.api.web.LoanApiControllerTest","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                               
+{"@timestamp":"2025-09-11T01:47:46.219178-03:00","@version":"1","message":"Could not detect default configuration classes for test class [com.example.loan.api.web.LoanApiControllerValidationTest]: LoanApiControllerValidationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.","logger_name":"org.springframework.test.context.support.AnnotationConfigContextLoaderUtils","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                     
+{"@timestamp":"2025-09-11T01:47:46.223971-03:00","@version":"1","message":"Found @SpringBootConfiguration com.example.loan.api.LoanApiApplication for test class com.example.loan.api.web.LoanApiControllerValidationTest","logger_name":"org.springframework.boot.test.context.SpringBootTestContextBootstrapper","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                            
+{"@timestamp":"2025-09-11T01:47:46.245192-03:00","@version":"1","message":"Could not detect default configuration classes for test class [com.example.loan.api.web.GlobalExceptionHandlerTest]: GlobalExceptionHandlerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.","logger_name":"org.springframework.test.context.support.AnnotationConfigContextLoaderUtils","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                               
+{"@timestamp":"2025-09-11T01:47:46.249822-03:00","@version":"1","message":"Found @SpringBootConfiguration com.example.loan.api.LoanApiApplication for test class com.example.loan.api.web.GlobalExceptionHandlerTest","logger_name":"org.springframework.boot.test.context.SpringBootTestContextBootstrapper","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                 
+{"@timestamp":"2025-09-11T01:47:46.275084-03:00","@version":"1","message":"Could not detect default configuration classes for test class [com.example.loan.api.LoanApiApplicationTests]: LoanApiApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.","logger_name":"org.springframework.test.context.support.AnnotationConfigContextLoaderUtils","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                         
+{"@timestamp":"2025-09-11T01:47:46.279797-03:00","@version":"1","message":"Found @SpringBootConfiguration com.example.loan.api.LoanApiApplication for test class com.example.loan.api.LoanApiApplicationTests","logger_name":"org.springframework.boot.test.context.SpringBootTestContextBootstrapper","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                        
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.3)
+
+{"@timestamp":"2025-09-11T01:47:46.302671-03:00","@version":"1","message":"Starting LoanApiApplicationTests using Java 21.0.1 with PID 36989 (started by tazabreu in /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/loan-api)","logger_name":"com.example.loan.api.LoanApiApplicationTests","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                     
+{"@timestamp":"2025-09-11T01:47:46.302882-03:00","@version":"1","message":"The following 1 profile is active: \"local\"","logger_name":"com.example.loan.api.LoanApiApplicationTests","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                              
+{"@timestamp":"2025-09-11T01:47:46.614722-03:00","@version":"1","message":"Bootstrapping Spring Data JPA repositories in DEFAULT mode.","logger_name":"org.springframework.data.repository.config.RepositoryConfigurationDelegate","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                 
+{"@timestamp":"2025-09-11T01:47:46.640596-03:00","@version":"1","message":"Finished Spring Data repository scanning in 22 ms. Found 2 JPA repository interfaces.","logger_name":"org.springframework.data.repository.config.RepositoryConfigurationDelegate","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                                                                  
+{"@timestamp":"2025-09-11T01:47:46.954492-03:00","@version":"1","message":"HHH000204: Processing PersistenceUnitInfo [name: default]","logger_name":"org.hibernate.jpa.internal.util.LogHelper","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                    
+{"@timestamp":"2025-09-11T01:47:46.986513-03:00","@version":"1","message":"HHH000412: Hibernate ORM core version 6.5.2.Final","logger_name":"org.hibernate.Version","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                                                
+{"@timestamp":"2025-09-11T01:47:47.004304-03:00","@version":"1","message":"HHH000026: Second-level cache disabled","logger_name":"org.hibernate.cache.internal.RegionFactoryInitiator","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                             
+{"@timestamp":"2025-09-11T01:47:47.077597-03:00","@version":"1","message":"No LoadTimeWeaver setup: ignoring JPA class transformer","logger_name":"org.springframework.orm.jpa.persistenceunit.SpringPersistenceUnitInfo","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                          
+{"@timestamp":"2025-09-11T01:47:47.092021-03:00","@version":"1","message":"HikariPool-1 - Starting...","logger_name":"com.zaxxer.hikari.HikariDataSource","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                                                          
+{"@timestamp":"2025-09-11T01:47:47.207188-03:00","@version":"1","message":"HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:loans user=SA","logger_name":"com.zaxxer.hikari.pool.HikariPool","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                 
+{"@timestamp":"2025-09-11T01:47:47.207932-03:00","@version":"1","message":"HikariPool-1 - Start completed.","logger_name":"com.zaxxer.hikari.HikariDataSource","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                                                     
+{"@timestamp":"2025-09-11T01:47:47.224041-03:00","@version":"1","message":"HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)","logger_name":"org.hibernate.orm.deprecation","thread_name":"main","level":"WARN","level_value":30000,"service":"loan-api"}                                                                          
+{"@timestamp":"2025-09-11T01:47:47.599001-03:00","@version":"1","message":"HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)","logger_name":"org.hibernate.engine.transaction.jta.platform.internal.JtaPlatformInitiator","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                                    
+{"@timestamp":"2025-09-11T01:47:47.61592-03:00","@version":"1","message":"Initialized JPA EntityManagerFactory for persistence unit 'default'","logger_name":"org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                  
+{"@timestamp":"2025-09-11T01:47:48.106204-03:00","@version":"1","message":"spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning","logger_name":"org.springframework.boot.autoconfigure.orm.jpa.JpaBaseConfiguration$JpaWebConfiguration","thread_name":"main","level":"WARN","level_value":30000,"service":"loan-api"}                                                                                              
+{"@timestamp":"2025-09-11T01:47:48.246145-03:00","@version":"1","message":"Exception when initializing feature provider dev.openfeature.contrib.providers.flagd.FlagdProvider","logger_name":"dev.openfeature.sdk.ProviderRepository","thread_name":"Thread-3","level":"ERROR","level_value":40000,"stack_trace":"dev.openfeature.sdk.exceptions.GeneralError: Deadline exceeded. Condition did not complete within the 500 deadline\n\tat dev.openfeature.contrib.providers.flagd.resolver.common.Util.busyWaitAndCheck(Util.java:27)\n\tat dev.openfeature.contrib.providers.flagd.resolver.grpc.GrpcConnector.initialize(GrpcConnector.java:77)\n\tat dev.openfeature.contrib.providers.flagd.resolver.grpc.GrpcResolver.init(GrpcResolver.java:77)\n\tat dev.openfeature.contrib.providers.flagd.FlagdProvider.initialize(FlagdProvider.java:77)\n\tat dev.openfeature.sdk.ProviderRepository.initializeProvider(ProviderRepository.java:136)\n\tat dev.openfeature.sdk.ProviderRepository.lambda$prepareAndInitializeProvider$3(ProviderRepository.java:124)\n\tat java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)\n\tat java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.base/java.lang.Thread.run(Thread.java:1583)\n","service":"loan-api"}                                        
+{"@timestamp":"2025-09-11T01:47:48.479966-03:00","@version":"1","message":"Exposing 2 endpoints beneath base path '/actuator'","logger_name":"org.springframework.boot.actuate.endpoint.web.EndpointLinksResolver","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                 
+{"@timestamp":"2025-09-11T01:47:48.521779-03:00","@version":"1","message":"Started LoanApiApplicationTests in 2.239 seconds (process running for 5.281)","logger_name":"com.example.loan.api.LoanApiApplicationTests","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                              
+{"@timestamp":"2025-09-11T01:47:48.668291-03:00","@version":"1","message":"[Channel<1>: (flagd:8013)] Failed to resolve name. status=Status{code=UNAVAILABLE, description=Unable to resolve host flagd, cause=java.lang.RuntimeException: java.net.UnknownHostException: flagd: nodename nor servname provided, or not known\n\tat io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)\n\tat io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)\n\tat io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.base/java.lang.Thread.run(Thread.java:1583)\nCaused by: java.net.UnknownHostException: flagd: nodename nor servname provided, or not known\n\tat java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Native Method)\n\tat java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:52)\n\tat java.base/java.net.InetAddress$PlatformResolver.lookupByName(InetAddress.java:1211)\n\tat java.base/java.net.InetAddress.getAddressesFromNameService(InetAddress.java:1828)\n\tat java.base/java.net.InetAddress$NameServiceAddresses.get(InetAddress.java:1139)\n\tat java.base/java.net.InetAddress.getAllByName0(InetAddress.java:1818)\n\tat java.base/java.net.InetAddress.getAllByName(InetAddress.java:1688)\n\tat io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)\n\tat io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)\n\t... 5 more\n}","logger_name":"io.grpc.internal.ManagedChannelImpl","thread_name":"grpc-default-executor-0","level":"WARN","level_value":30000,"service":"loan-api"}        
+{"@timestamp":"2025-09-11T01:47:48.67879-03:00","@version":"1","message":"event stream","logger_name":"dev.openfeature.contrib.providers.flagd.resolver.grpc.EventStreamObserver","thread_name":"grpc-default-executor-0","level":"WARN","level_value":30000,"stack_trace":"io.grpc.StatusRuntimeException: UNAVAILABLE: Unable to resolve host flagd\n\tat io.grpc.Status.asRuntimeException(Status.java:533)\n\tat io.grpc.stub.ClientCalls$StreamObserverToCallListenerAdapter.onClose(ClientCalls.java:481)\n\tat io.grpc.internal.DelayedClientCall$DelayedListener$3.run(DelayedClientCall.java:489)\n\tat io.grpc.internal.DelayedClientCall$DelayedListener.drainPendingCallbacks(DelayedClientCall.java:528)\n\tat io.grpc.internal.DelayedClientCall$1DrainListenerRunnable.runInContext(DelayedClientCall.java:317)\n\tat io.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.base/java.lang.Thread.run(Thread.java:1583)\nCaused by: java.lang.RuntimeException: java.net.UnknownHostException: flagd: nodename nor servname provided, or not known\n\tat io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)\n\tat io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)\n\tat io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)\n\t... 3 common frames omitted\nCaused by: java.net.UnknownHostException: flagd: nodename nor servname provided, or not known\n\tat java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Native Method)\n\tat java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:52)\n\tat java.base/java.net.InetAddress$PlatformResolver.lookupByName(InetAddress.java:1211)\n\tat java.base/java.net.InetAddress.getAddressesFromNameService(InetAddress.java:1828)\n\tat java.base/java.net.InetAddress$NameServiceAddresses.get(InetAddress.java:1139)\n\tat java.base/java.net.InetAddress.getAllByName0(InetAddress.java:1818)\n\tat java.base/java.net.InetAddress.getAllByName(InetAddress.java:1688)\n\tat io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)\n\tat io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)\n\t... 5 common frames omitted\n","service":"loan-api"}                                                         
+```
+
+---
+
+<think><details><summary>Thought Process</summary>**Checking e2e module logs**
+
+It returned exit code 0, showing success, but we didn’t see logs for the e2e module. The `-q` flag hides outputs, so we need to confirm if e2e ran properly. I could check the target/surefire or failsafe reports in the e2e-tests target directory. There’s also some output regarding OpenFeature flagd exceptions from loan-api tests, but those tests didn’t fail. I should verify the presence of the e2e-tests/target/failsafe-reports and list in that directory.
+**Explaining the testing setup**
+
+I’ll outline how we use Testcontainers for Postgres and GenericContainer for Redpanda, setting up two Spring Boot applications with randomized ports. This will involve calling REST endpoints to simulate contract processes, disbursement, and payment, while consuming messages from the Kafka topic named loan-events. I’ll clarify the necessary configuration keys in the startApps properties, the testing strategy with BeforeAll and AfterAll annotations, and the dependencies in the pom file like kafka-clients and testcontainers. After verifying e2e-tests runs successfully, I’ll mark that task completed.
+**Updating on project changes**
+
+I need to follow the status_update_spec and provide micro-updates at tool calls, which I’ve already included before. Now, I want to run a terminal command to list the failsafe reports, possibly in parallel. There were also code changes made when we adjusted the root POM and created an e2e-tests/pom.xml, so we should ensure that any lints are read. Since Java lints aren’t supported, I'll focus on checking consistency with repo guidelines instead, even though I didn’t commit any changes yet. Let's list the e2e-tests/target directory now.</details></think>
+
+---
+
+I'll verify that the e2e integration test ran by checking the failsafe reports in `e2e-tests/target`, then I'll explain the module structure and test flow.
+
+---
+
+```bash
+ls -la /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target && echo '--- failsafe reports ---' && ls -la /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/failsafe-reports | cat && echo '--- surefire reports ---' && ls -la /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/surefire-reports | cat
+```
+
+```
+total 8
+drwxr-xr-x@ 8 tazabreu  staff   256 Sep 11 01:47 .
+drwxr-xr-x@ 5 tazabreu  staff   160 Sep 11 01:47 ..
+-rw-r--r--@ 1 tazabreu  staff  1822 Sep 11 01:47 e2e-tests-0.1.0-SNAPSHOT.jar
+drwxr-xr-x@ 3 tazabreu  staff    96 Sep 11 01:47 failsafe-reports
+drwxr-xr-x@ 3 tazabreu  staff    96 Sep 11 01:47 generated-test-sources
+drwxr-xr-x@ 3 tazabreu  staff    96 Sep 11 01:47 maven-archiver
+drwxr-xr-x@ 3 tazabreu  staff    96 Sep 11 01:47 maven-status
+drwxr-xr-x@ 2 tazabreu  staff    64 Sep 11 01:47 test-classes
+--- failsafe reports ---
+total 8
+drwxr-xr-x@ 3 tazabreu  staff   96 Sep 11 01:47 .
+drwxr-xr-x@ 8 tazabreu  staff  256 Sep 11 01:47 ..
+-rw-r--r--@ 1 tazabreu  staff  468 Sep 11 01:47 failsafe-summary.xml
+--- surefire reports ---
+ls: /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/surefire-reports: No such file or directory                                                                                         
+```
+
+---
+
+<think><details><summary>Thought Process</summary>**Running tests and updates**
+
+I'm noticing that the failsafe executed but didn't find any tests. I think the summary will provide clarity on that. I should also include status updates before making any tool calls and update the todo statuses accordingly. It feels like a good plan to keep everything organized! So, I’ll proceed with running the terminal to address these points. I just want to make sure I cover all bases!</details></think>
+
+---
+
+I ran the Maven verify for the E2E module. Now I'll check whether the integration test class compiled and what Failsafe reported.
+
+---
+
+```bash
+ls -la /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/test-classes && echo '---' && cat /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/failsafe-reports/failsafe-summary.xml | cat
+```
+
+```
+total 0
+drwxr-xr-x@ 2 tazabreu  staff   64 Sep 11 01:47 .
+drwxr-xr-x@ 8 tazabreu  staff  256 Sep 11 01:47 ..
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<failsafe-summary xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/failsafe-summary.xsd" result="254" timeout="false">
+    <completed>0</completed>
+    <errors>0</errors>
+    <failures>0</failures>
+    <skipped>0</skipped>
+    <failureMessage xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"/>
+```
+
+---
+
+<think><details><summary>Thought Process</summary>**Evaluating test configuration**
+
+Okay, it seems like the path is set correctly, and I need to check if e2e-tests/src/test/java exists and contains the necessary files. Earlier, I noted the e2e-tests directory had both src and target. The concern is that Maven could skip tests due to packaging, since the pom does not specify packaging, which defaults to jar. Notably, the Failsafe summary result code of 254 indicates no tests found. I suspect the JUnit Jupiter dependency might not be configured. Running the tests now will help clarify this.
+**Diagnosing test execution issues**
+
+The user wants me to run tests and go through the structure, but they didn't run successfully. I need to diagnose the issue and ensure they run properly. The e2e-test module depends on loan-api and loan-notification-service, which is fine, but I’m wondering why nothing compiled. Maybe the maven-surefire-plugin is causing a clash? I should check the Maven tree. The FullLifecycleIT class should be picked up by Failsafe since it’s configured for integration tests, but the empty test-classes directory suggests the sources weren’t compiled due to earlier errors.
+**Investigating test source compilation**
+
+The e2e-tests module doesn’t have any main sources, and I'm puzzled why the test sources aren't compiling into test-classes. It's possible the directory name is incorrect. I’ll check the actual file path again: it should be e2e-tests/src/test/java/com/example/loan/e2e/FullLifecycleIT.java, and I can confirm it exists. I remember listing that file earlier, so I need to double-check the listing to be absolutely sure everything is as it should be.</details></think>
+
+---
+
+I'll quickly check that the test source file exists on disk where Maven expects it, and then re-run Failsafe with more verbose output to see why it skipped tests.
+
+---
+
+```bash
+ls -la /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java/com/example/loan/e2e && mvn -f /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/pom.xml -DtrimStackTrace=false -DfailIfNoTests=false -Dit.test=FullLifecycleIT -X verify | cat
+```
+
+```
+directory /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/resources
+excludes []
+includes []
+[INFO] skip non existing resourceDirectory /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/resources                                                                                  
+[DEBUG] no use filter components
+[INFO] 
+[INFO] --- maven-compiler-plugin:3.11.0:testCompile (default-testCompile) @ e2e-tests ---
+[DEBUG] Configuring mojo org.apache.maven.plugins:maven-compiler-plugin:3.11.0:testCompile from plugin realm ClassRealm[plugin>org.apache.maven.plugins:maven-compiler-plugin:3.11.0, parent: jdk.internal.loader.ClassLoaders$AppClassLoader@18b4aac2]                                                                          
+[DEBUG] Configuring mojo 'org.apache.maven.plugins:maven-compiler-plugin:3.11.0:testCompile' with basic configurator -->                                                                                              
+[DEBUG]   (f) basedir = /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests
+[DEBUG]   (f) buildDirectory = /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target                                                                                                          
+[DEBUG]   (f) compileSourceRoots = [/Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java]                                                                                             
+[DEBUG]   (f) compilerId = javac
+[DEBUG]   (f) createMissingPackageInfoClass = true
+[DEBUG]   (f) debug = true
+[DEBUG]   (f) debugFileName = javac-test
+[DEBUG]   (f) enablePreview = false
+[DEBUG]   (f) encoding = UTF-8
+[DEBUG]   (f) failOnError = true
+[DEBUG]   (f) failOnWarning = false
+[DEBUG]   (f) forceJavacCompilerUse = false
+[DEBUG]   (f) fork = false
+[DEBUG]   (f) generatedTestSourcesDirectory = /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/generated-test-sources/test-annotations                                                   
+[DEBUG]   (f) mojoExecution = org.apache.maven.plugins:maven-compiler-plugin:3.11.0:testCompile {execution: default-testCompile}                                                                                      
+[DEBUG]   (f) optimize = false
+[DEBUG]   (f) outputDirectory = /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/test-classes                                                                                            
+[DEBUG]   (f) parameters = true
+[DEBUG]   (f) project = MavenProject: com.example:e2e-tests:0.1.0-SNAPSHOT @ /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/pom.xml                                                           
+[DEBUG]   (s) release = 21
+[DEBUG]   (f) session = org.apache.maven.execution.MavenSession@11d4dbd6
+[DEBUG]   (f) showCompilationChanges = false
+[DEBUG]   (f) showDeprecation = false
+[DEBUG]   (f) showWarnings = true
+[DEBUG]   (f) skipMultiThreadWarning = false
+[DEBUG]   (f) source = 1.8
+[DEBUG]   (f) staleMillis = 0
+[DEBUG]   (s) target = 1.8
+[DEBUG]   (f) testPath = [/Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/test-classes, /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/classes, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-test/3.3.3/spring-boot-starter-test-3.3.3.jar, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter/3.3.3/spring-boot-starter-3.3.3.jar, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot/3.3.3/spring-boot-3.3.3.jar, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-autoconfigure/3.3.3/spring-boot-autoconfigure-3.3.3.jar, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-logging/3.3.3/spring-boot-starter-logging-3.3.3.jar, /Users/tazabreu/.m2/repository/ch/qos/logback/logback-classic/1.5.7/logback-classic-1.5.7.jar, /Users/tazabreu/.m2/repository/ch/qos/logback/logback-core/1.5.7/logback-core-1.5.7.jar, /Users/tazabreu/.m2/repository/org/apache/logging/log4j/log4j-to-slf4j/2.23.1/log4j-to-slf4j-2.23.1.jar, /Users/tazabreu/.m2/repository/org/apache/logging/log4j/log4j-api/2.23.1/log4j-api-2.23.1.jar, /Users/tazabreu/.m2/repository/org/slf4j/jul-to-slf4j/2.0.16/jul-to-slf4j-2.0.16.jar, /Users/tazabreu/.m2/repository/jakarta/annotation/jakarta.annotation-api/2.1.1/jakarta.annotation-api-2.1.1.jar, /Users/tazabreu/.m2/repository/org/yaml/snakeyaml/2.2/snakeyaml-2.2.jar, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-test/3.3.3/spring-boot-test-3.3.3.jar, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-test-autoconfigure/3.3.3/spring-boot-test-autoconfigure-3.3.3.jar, /Users/tazabreu/.m2/repository/com/jayway/jsonpath/json-path/2.9.0/json-path-2.9.0.jar, /Users/tazabreu/.m2/repository/jakarta/xml/bind/jakarta.xml.bind-api/4.0.2/jakarta.xml.bind-api-4.0.2.jar, /Users/tazabreu/.m2/repository/jakarta/activation/jakarta.activation-api/2.1.3/jakarta.activation-api-2.1.3.jar, /Users/tazabreu/.m2/repository/net/minidev/json-smart/2.5.1/json-smart-2.5.1.jar, /Users/tazabreu/.m2/repository/net/minidev/accessors-smart/2.5.1/accessors-smart-2.5.1.jar, /Users/tazabreu/.m2/repository/org/ow2/asm/asm/9.6/asm-9.6.jar, /Users/tazabreu/.m2/repository/org/assertj/assertj-core/3.25.3/assertj-core-3.25.3.jar, /Users/tazabreu/.m2/repository/net/bytebuddy/byte-buddy/1.14.19/byte-buddy-1.14.19.jar, /Users/tazabreu/.m2/repository/org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar, /Users/tazabreu/.m2/repository/org/junit/jupiter/junit-jupiter/5.10.3/junit-jupiter-5.10.3.jar, /Users/tazabreu/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.10.3/junit-jupiter-api-5.10.3.jar, /Users/tazabreu/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar, /Users/tazabreu/.m2/repository/org/junit/platform/junit-platform-commons/1.10.3/junit-platform-commons-1.10.3.jar, /Users/tazabreu/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar, /Users/tazabreu/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.10.3/junit-jupiter-params-5.10.3.jar, /Users/tazabreu/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.10.3/junit-jupiter-engine-5.10.3.jar, /Users/tazabreu/.m2/repository/org/junit/platform/junit-platform-engine/1.10.3/junit-platform-engine-1.10.3.jar, /Users/tazabreu/.m2/repository/org/mockito/mockito-core/5.11.0/mockito-core-5.11.0.jar, /Users/tazabreu/.m2/repository/net/bytebuddy/byte-buddy-agent/1.14.19/byte-buddy-agent-1.14.19.jar, /Users/tazabreu/.m2/repository/org/objenesis/objenesis/3.3/objenesis-3.3.jar, /Users/tazabreu/.m2/repository/org/mockito/mockito-junit-jupiter/5.11.0/mockito-junit-jupiter-5.11.0.jar, /Users/tazabreu/.m2/repository/org/skyscreamer/jsonassert/1.5.3/jsonassert-1.5.3.jar, /Users/tazabreu/.m2/repository/com/vaadin/external/google/android-json/0.0.20131108.vaadin1/android-json-0.0.20131108.vaadin1.jar, /Users/tazabreu/.m2/repository/org/springframework/spring-core/6.1.12/spring-core-6.1.12.jar, /Users/tazabreu/.m2/repository/org/springframework/spring-jcl/6.1.12/spring-jcl-6.1.12.jar, /Users/tazabreu/.m2/repository/org/springframework/spring-test/6.1.12/spring-test-6.1.12.jar, /Users/tazabreu/.m2/repository/org/xmlunit/xmlunit-core/2.9.1/xmlunit-core-2.9.1.jar, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-web/3.3.3/spring-boot-starter-web-3.3.3.jar, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-json/3.3.3/spring-boot-starter-json-3.3.3.jar, /Users/tazabreu/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.17.2/jackson-databind-2.17.2.jar, /Users/tazabreu/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.17.2/jackson-annotations-2.17.2.jar, /Users/tazabreu/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.17.2/jackson-core-2.17.2.jar, /Users/tazabreu/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-jdk8/2.17.2/jackson-datatype-jdk8-2.17.2.jar, /Users/tazabreu/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-jsr310/2.17.2/jackson-datatype-jsr310-2.17.2.jar, /Users/tazabreu/.m2/repository/com/fasterxml/jackson/module/jackson-module-parameter-names/2.17.2/jackson-module-parameter-names-2.17.2.jar, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-tomcat/3.3.3/spring-boot-starter-tomcat-3.3.3.jar, /Users/tazabreu/.m2/repository/org/apache/tomcat/embed/tomcat-embed-core/10.1.28/tomcat-embed-core-10.1.28.jar, /Users/tazabreu/.m2/repository/org/apache/tomcat/embed/tomcat-embed-el/10.1.28/tomcat-embed-el-10.1.28.jar, /Users/tazabreu/.m2/repository/org/apache/tomcat/embed/tomcat-embed-websocket/10.1.28/tomcat-embed-websocket-10.1.28.jar, /Users/tazabreu/.m2/repository/org/springframework/spring-web/6.1.12/spring-web-6.1.12.jar, /Users/tazabreu/.m2/repository/org/springframework/spring-beans/6.1.12/spring-beans-6.1.12.jar, /Users/tazabreu/.m2/repository/io/micrometer/micrometer-observation/1.13.3/micrometer-observation-1.13.3.jar, /Users/tazabreu/.m2/repository/io/micrometer/micrometer-commons/1.13.3/micrometer-commons-1.13.3.jar, /Users/tazabreu/.m2/repository/org/springframework/spring-webmvc/6.1.12/spring-webmvc-6.1.12.jar, /Users/tazabreu/.m2/repository/org/springframework/spring-aop/6.1.12/spring-aop-6.1.12.jar, /Users/tazabreu/.m2/repository/org/springframework/spring-context/6.1.12/spring-context-6.1.12.jar, /Users/tazabreu/.m2/repository/org/springframework/spring-expression/6.1.12/spring-expression-6.1.12.jar, /Users/tazabreu/.m2/repository/org/testcontainers/junit-jupiter/1.19.8/junit-jupiter-1.19.8.jar, /Users/tazabreu/.m2/repository/org/testcontainers/testcontainers/1.19.8/testcontainers-1.19.8.jar, /Users/tazabreu/.m2/repository/junit/junit/4.13.2/junit-4.13.2.jar, /Users/tazabreu/.m2/repository/org/hamcrest/hamcrest-core/2.2/hamcrest-core-2.2.jar, /Users/tazabreu/.m2/repository/org/apache/commons/commons-compress/1.24.0/commons-compress-1.24.0.jar, /Users/tazabreu/.m2/repository/org/rnorth/duct-tape/duct-tape/1.0.8/duct-tape-1.0.8.jar, /Users/tazabreu/.m2/repository/org/jetbrains/annotations/17.0.0/annotations-17.0.0.jar, /Users/tazabreu/.m2/repository/com/github/docker-java/docker-java-api/3.3.6/docker-java-api-3.3.6.jar, /Users/tazabreu/.m2/repository/com/github/docker-java/docker-java-transport-zerodep/3.3.6/docker-java-transport-zerodep-3.3.6.jar, /Users/tazabreu/.m2/repository/com/github/docker-java/docker-java-transport/3.3.6/docker-java-transport-3.3.6.jar, /Users/tazabreu/.m2/repository/net/java/dev/jna/jna/5.13.0/jna-5.13.0.jar, /Users/tazabreu/.m2/repository/org/testcontainers/postgresql/1.19.8/postgresql-1.19.8.jar, /Users/tazabreu/.m2/repository/org/testcontainers/jdbc/1.19.8/jdbc-1.19.8.jar, /Users/tazabreu/.m2/repository/org/testcontainers/database-commons/1.19.8/database-commons-1.19.8.jar, /Users/tazabreu/.m2/repository/org/awaitility/awaitility/4.2.0/awaitility-4.2.0.jar, /Users/tazabreu/.m2/repository/org/apache/kafka/kafka-clients/3.7.1/kafka-clients-3.7.1.jar, /Users/tazabreu/.m2/repository/com/github/luben/zstd-jni/1.5.6-3/zstd-jni-1.5.6-3.jar, /Users/tazabreu/.m2/repository/org/lz4/lz4-java/1.8.0/lz4-java-1.8.0.jar, /Users/tazabreu/.m2/repository/org/xerial/snappy/snappy-java/1.1.10.5/snappy-java-1.1.10.5.jar, /Users/tazabreu/.m2/repository/org/slf4j/slf4j-api/2.0.16/slf4j-api-2.0.16.jar, /Users/tazabreu/.m2/repository/com/example/loan-api/0.1.0-SNAPSHOT/loan-api-0.1.0-SNAPSHOT.jar, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-actuator/3.3.3/spring-boot-starter-actuator-3.3.3.jar, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-actuator-autoconfigure/3.3.3/spring-boot-actuator-autoconfigure-3.3.3.jar, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-actuator/3.3.3/spring-boot-actuator-3.3.3.jar, /Users/tazabreu/.m2/repository/io/micrometer/micrometer-jakarta9/1.13.3/micrometer-jakarta9-1.13.3.jar, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-validation/3.3.3/spring-boot-starter-validation-3.3.3.jar, /Users/tazabreu/.m2/repository/org/hibernate/validator/hibernate-validator/8.0.1.Final/hibernate-validator-8.0.1.Final.jar, /Users/tazabreu/.m2/repository/jakarta/validation/jakarta.validation-api/3.0.2/jakarta.validation-api-3.0.2.jar, /Users/tazabreu/.m2/repository/org/jboss/logging/jboss-logging/3.5.3.Final/jboss-logging-3.5.3.Final.jar, /Users/tazabreu/.m2/repository/com/fasterxml/classmate/1.7.0/classmate-1.7.0.jar, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-data-jpa/3.3.3/spring-boot-starter-data-jpa-3.3.3.jar, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-aop/3.3.3/spring-boot-starter-aop-3.3.3.jar, /Users/tazabreu/.m2/repository/org/aspectj/aspectjweaver/1.9.22.1/aspectjweaver-1.9.22.1.jar, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-jdbc/3.3.3/spring-boot-starter-jdbc-3.3.3.jar, /Users/tazabreu/.m2/repository/com/zaxxer/HikariCP/5.1.0/HikariCP-5.1.0.jar, /Users/tazabreu/.m2/repository/org/springframework/spring-jdbc/6.1.12/spring-jdbc-6.1.12.jar, /Users/tazabreu/.m2/repository/org/hibernate/orm/hibernate-core/6.5.2.Final/hibernate-core-6.5.2.Final.jar, /Users/tazabreu/.m2/repository/jakarta/persistence/jakarta.persistence-api/3.1.0/jakarta.persistence-api-3.1.0.jar, /Users/tazabreu/.m2/repository/jakarta/transaction/jakarta.transaction-api/2.0.1/jakarta.transaction-api-2.0.1.jar, /Users/tazabreu/.m2/repository/org/hibernate/common/hibernate-commons-annotations/6.0.6.Final/hibernate-commons-annotations-6.0.6.Final.jar, /Users/tazabreu/.m2/repository/io/smallrye/jandex/3.1.2/jandex-3.1.2.jar, /Users/tazabreu/.m2/repository/org/glassfish/jaxb/jaxb-runtime/4.0.5/jaxb-runtime-4.0.5.jar, /Users/tazabreu/.m2/repository/org/glassfish/jaxb/jaxb-core/4.0.5/jaxb-core-4.0.5.jar, /Users/tazabreu/.m2/repository/org/eclipse/angus/angus-activation/2.0.2/angus-activation-2.0.2.jar, /Users/tazabreu/.m2/repository/org/glassfish/jaxb/txw2/4.0.5/txw2-4.0.5.jar, /Users/tazabreu/.m2/repository/com/sun/istack/istack-commons-runtime/4.1.2/istack-commons-runtime-4.1.2.jar, /Users/tazabreu/.m2/repository/jakarta/inject/jakarta.inject-api/2.0.1/jakarta.inject-api-2.0.1.jar, /Users/tazabreu/.m2/repository/org/antlr/antlr4-runtime/4.13.0/antlr4-runtime-4.13.0.jar, /Users/tazabreu/.m2/repository/org/springframework/data/spring-data-jpa/3.3.3/spring-data-jpa-3.3.3.jar, /Users/tazabreu/.m2/repository/org/springframework/data/spring-data-commons/3.3.3/spring-data-commons-3.3.3.jar, /Users/tazabreu/.m2/repository/org/springframework/spring-orm/6.1.12/spring-orm-6.1.12.jar, /Users/tazabreu/.m2/repository/org/springframework/spring-aspects/6.1.12/spring-aspects-6.1.12.jar, /Users/tazabreu/.m2/repository/org/springframework/kafka/spring-kafka/3.2.3/spring-kafka-3.2.3.jar, /Users/tazabreu/.m2/repository/org/springframework/spring-messaging/6.1.12/spring-messaging-6.1.12.jar, /Users/tazabreu/.m2/repository/org/springframework/spring-tx/6.1.12/spring-tx-6.1.12.jar, /Users/tazabreu/.m2/repository/org/springframework/retry/spring-retry/2.0.8/spring-retry-2.0.8.jar, /Users/tazabreu/.m2/repository/io/micrometer/micrometer-registry-prometheus/1.13.3/micrometer-registry-prometheus-1.13.3.jar, /Users/tazabreu/.m2/repository/io/micrometer/micrometer-core/1.13.3/micrometer-core-1.13.3.jar, /Users/tazabreu/.m2/repository/org/hdrhistogram/HdrHistogram/2.2.2/HdrHistogram-2.2.2.jar, /Users/tazabreu/.m2/repository/org/latencyutils/LatencyUtils/2.0.3/LatencyUtils-2.0.3.jar, /Users/tazabreu/.m2/repository/io/prometheus/prometheus-metrics-core/1.2.1/prometheus-metrics-core-1.2.1.jar, /Users/tazabreu/.m2/repository/io/prometheus/prometheus-metrics-model/1.2.1/prometheus-metrics-model-1.2.1.jar, /Users/tazabreu/.m2/repository/io/prometheus/prometheus-metrics-config/1.2.1/prometheus-metrics-config-1.2.1.jar, /Users/tazabreu/.m2/repository/io/prometheus/prometheus-metrics-tracer-common/1.2.1/prometheus-metrics-tracer-common-1.2.1.jar, /Users/tazabreu/.m2/repository/io/prometheus/prometheus-metrics-exposition-formats/1.2.1/prometheus-metrics-exposition-formats-1.2.1.jar, /Users/tazabreu/.m2/repository/io/prometheus/prometheus-metrics-shaded-protobuf/1.2.1/prometheus-metrics-shaded-protobuf-1.2.1.jar, /Users/tazabreu/.m2/repository/io/opentelemetry/opentelemetry-api/1.37.0/opentelemetry-api-1.37.0.jar, /Users/tazabreu/.m2/repository/io/opentelemetry/opentelemetry-context/1.37.0/opentelemetry-context-1.37.0.jar, /Users/tazabreu/.m2/repository/dev/openfeature/sdk/1.9.0/sdk-1.9.0.jar, /Users/tazabreu/.m2/repository/dev/openfeature/contrib/providers/flagd/0.8.6/flagd-0.8.6.jar, /Users/tazabreu/.m2/repository/io/grpc/grpc-netty/1.66.0/grpc-netty-1.66.0.jar, /Users/tazabreu/.m2/repository/io/grpc/grpc-api/1.66.0/grpc-api-1.66.0.jar, /Users/tazabreu/.m2/repository/io/netty/netty-codec-http2/4.1.112.Final/netty-codec-http2-4.1.112.Final.jar, /Users/tazabreu/.m2/repository/io/netty/netty-codec/4.1.112.Final/netty-codec-4.1.112.Final.jar, /Users/tazabreu/.m2/repository/io/netty/netty-handler/4.1.112.Final/netty-handler-4.1.112.Final.jar, /Users/tazabreu/.m2/repository/io/netty/netty-codec-http/4.1.112.Final/netty-codec-http-4.1.112.Final.jar, /Users/tazabreu/.m2/repository/io/grpc/grpc-core/1.66.0/grpc-core-1.66.0.jar, /Users/tazabreu/.m2/repository/com/google/android/annotations/4.1.1.4/annotations-4.1.1.4.jar, /Users/tazabreu/.m2/repository/org/codehaus/mojo/animal-sniffer-annotations/1.24/animal-sniffer-annotations-1.24.jar, /Users/tazabreu/.m2/repository/io/grpc/grpc-context/1.66.0/grpc-context-1.66.0.jar, /Users/tazabreu/.m2/repository/io/netty/netty-handler-proxy/4.1.112.Final/netty-handler-proxy-4.1.112.Final.jar, /Users/tazabreu/.m2/repository/io/netty/netty-codec-socks/4.1.112.Final/netty-codec-socks-4.1.112.Final.jar, /Users/tazabreu/.m2/repository/com/google/guava/guava/33.2.1-android/guava-33.2.1-android.jar, /Users/tazabreu/.m2/repository/com/google/guava/failureaccess/1.0.2/failureaccess-1.0.2.jar, /Users/tazabreu/.m2/repository/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar, /Users/tazabreu/.m2/repository/com/google/j2objc/j2objc-annotations/3.0.0/j2objc-annotations-3.0.0.jar, /Users/tazabreu/.m2/repository/com/google/errorprone/error_prone_annotations/2.28.0/error_prone_annotations-2.28.0.jar, /Users/tazabreu/.m2/repository/io/perfmark/perfmark-api/0.27.0/perfmark-api-0.27.0.jar, /Users/tazabreu/.m2/repository/io/netty/netty-transport-native-unix-common/4.1.112.Final/netty-transport-native-unix-common-4.1.112.Final.jar, /Users/tazabreu/.m2/repository/io/grpc/grpc-util/1.66.0/grpc-util-1.66.0.jar, /Users/tazabreu/.m2/repository/io/grpc/grpc-protobuf/1.66.0/grpc-protobuf-1.66.0.jar, /Users/tazabreu/.m2/repository/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar, /Users/tazabreu/.m2/repository/com/google/protobuf/protobuf-java/3.25.3/protobuf-java-3.25.3.jar, /Users/tazabreu/.m2/repository/com/google/api/grpc/proto-google-common-protos/2.41.0/proto-google-common-protos-2.41.0.jar, /Users/tazabreu/.m2/repository/io/grpc/grpc-protobuf-lite/1.66.0/grpc-protobuf-lite-1.66.0.jar, /Users/tazabreu/.m2/repository/io/grpc/grpc-stub/1.66.0/grpc-stub-1.66.0.jar, /Users/tazabreu/.m2/repository/io/netty/netty-transport-native-epoll/4.1.112.Final/netty-transport-native-epoll-4.1.112.Final-linux-x86_64.jar, /Users/tazabreu/.m2/repository/io/netty/netty-common/4.1.112.Final/netty-common-4.1.112.Final.jar, /Users/tazabreu/.m2/repository/io/netty/netty-buffer/4.1.112.Final/netty-buffer-4.1.112.Final.jar, /Users/tazabreu/.m2/repository/io/netty/netty-transport/4.1.112.Final/netty-transport-4.1.112.Final.jar, /Users/tazabreu/.m2/repository/io/netty/netty-resolver/4.1.112.Final/netty-resolver-4.1.112.Final.jar, /Users/tazabreu/.m2/repository/io/netty/netty-transport-classes-epoll/4.1.112.Final/netty-transport-classes-epoll-4.1.112.Final.jar, /Users/tazabreu/.m2/repository/io/github/jamsesso/json-logic-java/1.0.7/json-logic-java-1.0.7.jar, /Users/tazabreu/.m2/repository/com/google/code/gson/gson/2.10.1/gson-2.10.1.jar, /Users/tazabreu/.m2/repository/com/networknt/json-schema-validator/1.5.1/json-schema-validator-1.5.1.jar, /Users/tazabreu/.m2/repository/com/ethlo/time/itu/1.10.2/itu-1.10.2.jar, /Users/tazabreu/.m2/repository/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.17.2/jackson-dataformat-yaml-2.17.2.jar, /Users/tazabreu/.m2/repository/org/apache/commons/commons-collections4/4.4/commons-collections4-4.4.jar, /Users/tazabreu/.m2/repository/org/semver4j/semver4j/5.3.0/semver4j-5.3.0.jar, /Users/tazabreu/.m2/repository/commons-codec/commons-codec/1.16.1/commons-codec-1.16.1.jar, /Users/tazabreu/.m2/repository/org/springdoc/springdoc-openapi-starter-webmvc-ui/2.6.0/springdoc-openapi-starter-webmvc-ui-2.6.0.jar, /Users/tazabreu/.m2/repository/org/springdoc/springdoc-openapi-starter-webmvc-api/2.6.0/springdoc-openapi-starter-webmvc-api-2.6.0.jar, /Users/tazabreu/.m2/repository/org/springdoc/springdoc-openapi-starter-common/2.6.0/springdoc-openapi-starter-common-2.6.0.jar, /Users/tazabreu/.m2/repository/io/swagger/core/v3/swagger-core-jakarta/2.2.22/swagger-core-jakarta-2.2.22.jar, /Users/tazabreu/.m2/repository/org/apache/commons/commons-lang3/3.14.0/commons-lang3-3.14.0.jar, /Users/tazabreu/.m2/repository/io/swagger/core/v3/swagger-annotations-jakarta/2.2.22/swagger-annotations-jakarta-2.2.22.jar, /Users/tazabreu/.m2/repository/io/swagger/core/v3/swagger-models-jakarta/2.2.22/swagger-models-jakarta-2.2.22.jar, /Users/tazabreu/.m2/repository/org/webjars/swagger-ui/5.17.14/swagger-ui-5.17.14.jar, /Users/tazabreu/.m2/repository/net/logstash/logback/logstash-logback-encoder/7.4/logstash-logback-encoder-7.4.jar, /Users/tazabreu/.m2/repository/org/postgresql/postgresql/42.7.3/postgresql-42.7.3.jar, /Users/tazabreu/.m2/repository/org/checkerframework/checker-qual/3.42.0/checker-qual-3.42.0.jar, /Users/tazabreu/.m2/repository/com/h2database/h2/2.2.224/h2-2.2.224.jar, /Users/tazabreu/.m2/repository/org/flywaydb/flyway-core/10.10.0/flyway-core-10.10.0.jar, /Users/tazabreu/.m2/repository/com/fasterxml/jackson/dataformat/jackson-dataformat-toml/2.17.2/jackson-dataformat-toml-2.17.2.jar, /Users/tazabreu/.m2/repository/com/example/loan-events/0.1.0-SNAPSHOT/loan-events-0.1.0-SNAPSHOT.jar, /Users/tazabreu/.m2/repository/com/example/loan-notification-service/0.1.0-SNAPSHOT/loan-notification-service-0.1.0-SNAPSHOT.jar]                                                                               
+[DEBUG]   (f) useIncrementalCompilation = true
+[DEBUG]   (f) useModulePath = true
+[DEBUG]   (f) verbose = false
+[DEBUG] -- end configuration --
+[DEBUG] Using compiler 'javac'.
+[DEBUG] Adding /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/generated-test-sources/test-annotations to test-compile source roots:                                                    
+  /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java
+[DEBUG] New test-compile source roots:
+  /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java
+  /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/generated-test-sources/test-annotations                                                                                               
+[DEBUG] CompilerReuseStrategy: reuseCreated
+[DEBUG] useIncrementalCompilation enabled
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- maven-surefire-plugin:3.2.5:test (default-test) @ e2e-tests ---
+[DEBUG] Using mirror maven-default-http-blocker (http://0.0.0.0/) for jboss-public-repository-group (http://repository.jboss.org/nexus/content/groups/public).                                                        
+[DEBUG] Dependency collection stats {ConflictMarker.analyzeTime=38542, ConflictMarker.markTime=25500, ConflictMarker.nodeCount=78, ConflictIdSorter.graphTime=18417, ConflictIdSorter.topsortTime=23000, ConflictIdSorter.conflictIdCount=39, ConflictIdSorter.conflictIdCycleCount=0, ConflictResolver.totalTime=384209, ConflictResolver.conflictItemCount=76, DefaultDependencyCollector.collectTime=118342625, DefaultDependencyCollector.transformTime=508417}                                                                                    
+[DEBUG] org.apache.maven.plugins:maven-surefire-plugin:jar:3.2.5
+[DEBUG]    org.apache.maven.surefire:maven-surefire-common:jar:3.2.5:compile
+[DEBUG]       org.apache.maven.surefire:surefire-api:jar:3.2.5:compile
+[DEBUG]          org.apache.maven.surefire:surefire-logger-api:jar:3.2.5:compile
+[DEBUG]       org.apache.maven.surefire:surefire-extensions-api:jar:3.2.5:compile
+[DEBUG]       org.apache.maven.surefire:surefire-booter:jar:3.2.5:compile
+[DEBUG]          org.apache.maven.surefire:surefire-extensions-spi:jar:3.2.5:compile
+[DEBUG]       org.eclipse.aether:aether-util:jar:1.0.0.v20140518:compile
+[DEBUG]          org.eclipse.aether:aether-api:jar:1.0.0.v20140518:compile
+[DEBUG]       org.apache.maven.shared:maven-common-artifact-filters:jar:3.1.1:compile (version managed from default) (exclusions managed from default)                                                                
+[DEBUG]          org.apache.maven:maven-artifact:jar:3.2.5:provided (scope managed from default) (version managed from default)                                                                                       
+[DEBUG]             org.codehaus.plexus:plexus-utils:jar:4.0.0:provided (version managed from default)
+[DEBUG]          org.apache.maven:maven-core:jar:3.2.5:provided (scope managed from default) (version managed from default)                                                                                           
+[DEBUG]             org.apache.maven:maven-settings:jar:3.2.5:provided (version managed from default)
+[DEBUG]             org.apache.maven:maven-settings-builder:jar:3.2.5:provided
+[DEBUG]             org.apache.maven:maven-repository-metadata:jar:3.2.5:provided
+[DEBUG]             org.apache.maven:maven-model-builder:jar:3.2.5:provided
+[DEBUG]             org.apache.maven:maven-aether-provider:jar:3.2.5:provided
+[DEBUG]                org.eclipse.aether:aether-spi:jar:1.0.0.v20140518:provided
+[DEBUG]             org.eclipse.aether:aether-impl:jar:1.0.0.v20140518:provided
+[DEBUG]             org.eclipse.sisu:org.eclipse.sisu.plexus:jar:0.9.0.M2:provided (version managed from default)                                                                                                     
+[DEBUG]                javax.annotation:javax.annotation-api:jar:1.2:provided
+[DEBUG]                javax.enterprise:cdi-api:jar:1.2:provided
+[DEBUG]                org.eclipse.sisu:org.eclipse.sisu.inject:jar:0.9.0.M2:provided (version managed from default)                                                                                                  
+[DEBUG]             org.sonatype.sisu:sisu-guice:jar:no_aop:3.2.3:provided
+[DEBUG]                javax.inject:javax.inject:jar:1:provided
+[DEBUG]                aopalliance:aopalliance:jar:1.0:provided
+[DEBUG]                com.google.guava:guava:jar:16.0.1:provided
+[DEBUG]             org.codehaus.plexus:plexus-interpolation:jar:1.21:provided
+[DEBUG]             org.codehaus.plexus:plexus-classworlds:jar:2.5.2:provided
+[DEBUG]             org.codehaus.plexus:plexus-component-annotations:jar:1.5.5:provided
+[DEBUG]             org.sonatype.plexus:plexus-sec-dispatcher:jar:1.3:provided
+[DEBUG]                org.sonatype.plexus:plexus-cipher:jar:1.4:provided
+[DEBUG]          org.apache.maven:maven-plugin-api:jar:3.2.5:provided (scope managed from default) (version managed from default)                                                                                     
+[DEBUG]          commons-io:commons-io:jar:2.15.1:compile (version managed from default)
+[DEBUG]       org.codehaus.plexus:plexus-java:jar:1.2.0:compile (version managed from default)
+[DEBUG]          org.ow2.asm:asm:jar:9.6:compile
+[DEBUG]          com.thoughtworks.qdox:qdox:jar:2.0.3:compile
+[DEBUG]       org.apache.maven.surefire:surefire-shared-utils:jar:3.2.5:compile
+[DEBUG] Created new class realm plugin>org.apache.maven.plugins:maven-surefire-plugin:3.2.5
+[DEBUG] Importing foreign packages into class realm plugin>org.apache.maven.plugins:maven-surefire-plugin:3.2.5                                                                                                       
+[DEBUG]   Imported:  < maven.api
+[DEBUG] Populating class realm plugin>org.apache.maven.plugins:maven-surefire-plugin:3.2.5
+[DEBUG]   Included: org.apache.maven.plugins:maven-surefire-plugin:jar:3.2.5
+[DEBUG]   Included: org.apache.maven.surefire:maven-surefire-common:jar:3.2.5
+[DEBUG]   Included: org.apache.maven.surefire:surefire-api:jar:3.2.5
+[DEBUG]   Included: org.apache.maven.surefire:surefire-logger-api:jar:3.2.5
+[DEBUG]   Included: org.apache.maven.surefire:surefire-extensions-api:jar:3.2.5
+[DEBUG]   Included: org.apache.maven.surefire:surefire-booter:jar:3.2.5
+[DEBUG]   Included: org.apache.maven.surefire:surefire-extensions-spi:jar:3.2.5
+[DEBUG]   Included: org.eclipse.aether:aether-util:jar:1.0.0.v20140518
+[DEBUG]   Included: org.apache.maven.shared:maven-common-artifact-filters:jar:3.1.1
+[DEBUG]   Included: commons-io:commons-io:jar:2.15.1
+[DEBUG]   Included: org.codehaus.plexus:plexus-java:jar:1.2.0
+[DEBUG]   Included: org.ow2.asm:asm:jar:9.6
+[DEBUG]   Included: com.thoughtworks.qdox:qdox:jar:2.0.3
+[DEBUG]   Included: org.apache.maven.surefire:surefire-shared-utils:jar:3.2.5
+[DEBUG] Configuring mojo org.apache.maven.plugins:maven-surefire-plugin:3.2.5:test from plugin realm ClassRealm[plugin>org.apache.maven.plugins:maven-surefire-plugin:3.2.5, parent: jdk.internal.loader.ClassLoaders$AppClassLoader@18b4aac2]                                                                                   
+[DEBUG] Configuring mojo 'org.apache.maven.plugins:maven-surefire-plugin:3.2.5:test' with basic configurator -->                                                                                                      
+[DEBUG]   (f) additionalClasspathDependencies = []
+[DEBUG]   (s) additionalClasspathElements = []
+[DEBUG]   (s) basedir = /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests
+[DEBUG]   (s) childDelegation = false
+[DEBUG]   (f) classesDirectory = /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/classes                                                                                                
+[DEBUG]   (s) classpathDependencyExcludes = []
+[DEBUG]   (s) dependenciesToScan = []
+[DEBUG]   (s) disableXmlReport = false
+[DEBUG]   (s) enableAssertions = true
+[DEBUG]   (s) encoding = UTF-8
+[DEBUG]   (s) excludeJUnit5Engines = []
+[DEBUG]   (f) excludedEnvironmentVariables = []
+[DEBUG]   (s) excludes = []
+[DEBUG]   (s) failIfNoSpecifiedTests = true
+[DEBUG]   (s) failIfNoTests = false
+[DEBUG]   (s) failOnFlakeCount = 0
+[DEBUG]   (f) forkCount = 1
+[DEBUG]   (s) forkedProcessExitTimeoutInSeconds = 30
+[DEBUG]   (s) includeJUnit5Engines = []
+[DEBUG]   (s) includes = []
+[DEBUG]   (s) junitArtifactName = junit:junit
+[DEBUG]   (f) parallelMavenExecution = false
+[DEBUG]   (s) parallelOptimized = true
+[DEBUG]   (s) perCoreThreadCount = true
+[DEBUG]   (s) pluginArtifactMap = {org.apache.maven.plugins:maven-surefire-plugin=org.apache.maven.plugins:maven-surefire-plugin:maven-plugin:3.2.5:, org.apache.maven.surefire:maven-surefire-common=org.apache.maven.surefire:maven-surefire-common:jar:3.2.5:compile, org.apache.maven.surefire:surefire-api=org.apache.maven.surefire:surefire-api:jar:3.2.5:compile, org.apache.maven.surefire:surefire-logger-api=org.apache.maven.surefire:surefire-logger-api:jar:3.2.5:compile, org.apache.maven.surefire:surefire-extensions-api=org.apache.maven.surefire:surefire-extensions-api:jar:3.2.5:compile, org.apache.maven.surefire:surefire-booter=org.apache.maven.surefire:surefire-booter:jar:3.2.5:compile, org.apache.maven.surefire:surefire-extensions-spi=org.apache.maven.surefire:surefire-extensions-spi:jar:3.2.5:compile, org.eclipse.aether:aether-util=org.eclipse.aether:aether-util:jar:1.0.0.v20140518:compile, org.eclipse.aether:aether-api=org.eclipse.aether:aether-api:jar:1.0.0.v20140518:compile, org.apache.maven.shared:maven-common-artifact-filters=org.apache.maven.shared:maven-common-artifact-filters:jar:3.1.1:compile, commons-io:commons-io=commons-io:commons-io:jar:2.15.1:compile, org.codehaus.plexus:plexus-java=org.codehaus.plexus:plexus-java:jar:1.2.0:compile, org.ow2.asm:asm=org.ow2.asm:asm:jar:9.6:compile, com.thoughtworks.qdox:qdox=com.thoughtworks.qdox:qdox:jar:2.0.3:compile, org.apache.maven.surefire:surefire-shared-utils=org.apache.maven.surefire:surefire-shared-utils:jar:3.2.5:compile}                                                                                                     
+[DEBUG]   (f) pluginDescriptor = Component Descriptor: role: 'org.apache.maven.plugin.Mojo', implementation: 'org.apache.maven.plugins.maven_surefire_plugin.HelpMojo', role hint: 'org.apache.maven.plugins:maven-surefire-plugin:3.2.5:help'                                                                                   
+role: 'org.apache.maven.plugin.Mojo', implementation: 'org.apache.maven.plugin.surefire.SurefirePlugin', role hint: 'org.apache.maven.plugins:maven-surefire-plugin:3.2.5:test'                                       
+---
+[DEBUG]   (s) printSummary = true
+[DEBUG]   (s) project = MavenProject: com.example:e2e-tests:0.1.0-SNAPSHOT @ /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/pom.xml                                                           
+[DEBUG]   (s) projectArtifactMap = {org.springframework.boot:spring-boot-starter-test=org.springframework.boot:spring-boot-starter-test:jar:3.3.3:test, org.springframework.boot:spring-boot-starter=org.springframework.boot:spring-boot-starter:jar:3.3.3:test, org.springframework.boot:spring-boot=org.springframework.boot:spring-boot:jar:3.3.3:test, org.springframework.boot:spring-boot-autoconfigure=org.springframework.boot:spring-boot-autoconfigure:jar:3.3.3:test, org.springframework.boot:spring-boot-starter-logging=org.springframework.boot:spring-boot-starter-logging:jar:3.3.3:test, ch.qos.logback:logback-classic=ch.qos.logback:logback-classic:jar:1.5.7:test, ch.qos.logback:logback-core=ch.qos.logback:logback-core:jar:1.5.7:test, org.apache.logging.log4j:log4j-to-slf4j=org.apache.logging.log4j:log4j-to-slf4j:jar:2.23.1:test, org.apache.logging.log4j:log4j-api=org.apache.logging.log4j:log4j-api:jar:2.23.1:test, org.slf4j:jul-to-slf4j=org.slf4j:jul-to-slf4j:jar:2.0.16:test, jakarta.annotation:jakarta.annotation-api=jakarta.annotation:jakarta.annotation-api:jar:2.1.1:test, org.yaml:snakeyaml=org.yaml:snakeyaml:jar:2.2:test, org.springframework.boot:spring-boot-test=org.springframework.boot:spring-boot-test:jar:3.3.3:test, org.springframework.boot:spring-boot-test-autoconfigure=org.springframework.boot:spring-boot-test-autoconfigure:jar:3.3.3:test, com.jayway.jsonpath:json-path=com.jayway.jsonpath:json-path:jar:2.9.0:test, jakarta.xml.bind:jakarta.xml.bind-api=jakarta.xml.bind:jakarta.xml.bind-api:jar:4.0.2:test, jakarta.activation:jakarta.activation-api=jakarta.activation:jakarta.activation-api:jar:2.1.3:test, net.minidev:json-smart=net.minidev:json-smart:jar:2.5.1:test, net.minidev:accessors-smart=net.minidev:accessors-smart:jar:2.5.1:test, org.ow2.asm:asm=org.ow2.asm:asm:jar:9.6:test, org.assertj:assertj-core=org.assertj:assertj-core:jar:3.25.3:test, net.bytebuddy:byte-buddy=net.bytebuddy:byte-buddy:jar:1.14.19:test, org.hamcrest:hamcrest=org.hamcrest:hamcrest:jar:2.2:test, org.junit.jupiter:junit-jupiter=org.junit.jupiter:junit-jupiter:jar:5.10.3:test, org.junit.jupiter:junit-jupiter-api=org.junit.jupiter:junit-jupiter-api:jar:5.10.3:test, org.opentest4j:opentest4j=org.opentest4j:opentest4j:jar:1.3.0:test, org.junit.platform:junit-platform-commons=org.junit.platform:junit-platform-commons:jar:1.10.3:test, org.apiguardian:apiguardian-api=org.apiguardian:apiguardian-api:jar:1.1.2:test, org.junit.jupiter:junit-jupiter-params=org.junit.jupiter:junit-jupiter-params:jar:5.10.3:test, org.junit.jupiter:junit-jupiter-engine=org.junit.jupiter:junit-jupiter-engine:jar:5.10.3:test, org.junit.platform:junit-platform-engine=org.junit.platform:junit-platform-engine:jar:1.10.3:test, org.mockito:mockito-core=org.mockito:mockito-core:jar:5.11.0:test, net.bytebuddy:byte-buddy-agent=net.bytebuddy:byte-buddy-agent:jar:1.14.19:test, org.objenesis:objenesis=org.objenesis:objenesis:jar:3.3:test, org.mockito:mockito-junit-jupiter=org.mockito:mockito-junit-jupiter:jar:5.11.0:test, org.skyscreamer:jsonassert=org.skyscreamer:jsonassert:jar:1.5.3:test, com.vaadin.external.google:android-json=com.vaadin.external.google:android-json:jar:0.0.20131108.vaadin1:test, org.springframework:spring-core=org.springframework:spring-core:jar:6.1.12:test, org.springframework:spring-jcl=org.springframework:spring-jcl:jar:6.1.12:test, org.springframework:spring-test=org.springframework:spring-test:jar:6.1.12:test, org.xmlunit:xmlunit-core=org.xmlunit:xmlunit-core:jar:2.9.1:test, org.springframework.boot:spring-boot-starter-web=org.springframework.boot:spring-boot-starter-web:jar:3.3.3:test, org.springframework.boot:spring-boot-starter-json=org.springframework.boot:spring-boot-starter-json:jar:3.3.3:test, com.fasterxml.jackson.core:jackson-databind=com.fasterxml.jackson.core:jackson-databind:jar:2.17.2:test, com.fasterxml.jackson.core:jackson-annotations=com.fasterxml.jackson.core:jackson-annotations:jar:2.17.2:test, com.fasterxml.jackson.core:jackson-core=com.fasterxml.jackson.core:jackson-core:jar:2.17.2:test, com.fasterxml.jackson.datatype:jackson-datatype-jdk8=com.fasterxml.jackson.datatype:jackson-datatype-jdk8:jar:2.17.2:test, com.fasterxml.jackson.datatype:jackson-datatype-jsr310=com.fasterxml.jackson.datatype:jackson-datatype-jsr310:jar:2.17.2:test, com.fasterxml.jackson.module:jackson-module-parameter-names=com.fasterxml.jackson.module:jackson-module-parameter-names:jar:2.17.2:test, org.springframework.boot:spring-boot-starter-tomcat=org.springframework.boot:spring-boot-starter-tomcat:jar:3.3.3:test, org.apache.tomcat.embed:tomcat-embed-core=org.apache.tomcat.embed:tomcat-embed-core:jar:10.1.28:test, org.apache.tomcat.embed:tomcat-embed-el=org.apache.tomcat.embed:tomcat-embed-el:jar:10.1.28:test, org.apache.tomcat.embed:tomcat-embed-websocket=org.apache.tomcat.embed:tomcat-embed-websocket:jar:10.1.28:test, org.springframework:spring-web=org.springframework:spring-web:jar:6.1.12:test, org.springframework:spring-beans=org.springframework:spring-beans:jar:6.1.12:test, io.micrometer:micrometer-observation=io.micrometer:micrometer-observation:jar:1.13.3:test, io.micrometer:micrometer-commons=io.micrometer:micrometer-commons:jar:1.13.3:test, org.springframework:spring-webmvc=org.springframework:spring-webmvc:jar:6.1.12:test, org.springframework:spring-aop=org.springframework:spring-aop:jar:6.1.12:test, org.springframework:spring-context=org.springframework:spring-context:jar:6.1.12:test, org.springframework:spring-expression=org.springframework:spring-expression:jar:6.1.12:test, org.testcontainers:junit-jupiter=org.testcontainers:junit-jupiter:jar:1.19.8:test, org.testcontainers:testcontainers=org.testcontainers:testcontainers:jar:1.19.8:test, junit:junit=junit:junit:jar:4.13.2:test, org.hamcrest:hamcrest-core=org.hamcrest:hamcrest-core:jar:2.2:test, org.apache.commons:commons-compress=org.apache.commons:commons-compress:jar:1.24.0:test, org.rnorth.duct-tape:duct-tape=org.rnorth.duct-tape:duct-tape:jar:1.0.8:test, org.jetbrains:annotations=org.jetbrains:annotations:jar:17.0.0:test, com.github.docker-java:docker-java-api=com.github.docker-java:docker-java-api:jar:3.3.6:test, com.github.docker-java:docker-java-transport-zerodep=com.github.docker-java:docker-java-transport-zerodep:jar:3.3.6:test, com.github.docker-java:docker-java-transport=com.github.docker-java:docker-java-transport:jar:3.3.6:test, net.java.dev.jna:jna=net.java.dev.jna:jna:jar:5.13.0:test, org.testcontainers:postgresql=org.testcontainers:postgresql:jar:1.19.8:test, org.testcontainers:jdbc=org.testcontainers:jdbc:jar:1.19.8:test, org.testcontainers:database-commons=org.testcontainers:database-commons:jar:1.19.8:test, org.awaitility:awaitility=org.awaitility:awaitility:jar:4.2.0:test, org.apache.kafka:kafka-clients=org.apache.kafka:kafka-clients:jar:3.7.1:test, com.github.luben:zstd-jni=com.github.luben:zstd-jni:jar:1.5.6-3:test, org.lz4:lz4-java=org.lz4:lz4-java:jar:1.8.0:test, org.xerial.snappy:snappy-java=org.xerial.snappy:snappy-java:jar:1.1.10.5:test, org.slf4j:slf4j-api=org.slf4j:slf4j-api:jar:2.0.16:test, com.example:loan-api=com.example:loan-api:jar:0.1.0-SNAPSHOT:test, org.springframework.boot:spring-boot-starter-actuator=org.springframework.boot:spring-boot-starter-actuator:jar:3.3.3:test, org.springframework.boot:spring-boot-actuator-autoconfigure=org.springframework.boot:spring-boot-actuator-autoconfigure:jar:3.3.3:test, org.springframework.boot:spring-boot-actuator=org.springframework.boot:spring-boot-actuator:jar:3.3.3:test, io.micrometer:micrometer-jakarta9=io.micrometer:micrometer-jakarta9:jar:1.13.3:test, org.springframework.boot:spring-boot-starter-validation=org.springframework.boot:spring-boot-starter-validation:jar:3.3.3:test, org.hibernate.validator:hibernate-validator=org.hibernate.validator:hibernate-validator:jar:8.0.1.Final:test, jakarta.validation:jakarta.validation-api=jakarta.validation:jakarta.validation-api:jar:3.0.2:test, org.jboss.logging:jboss-logging=org.jboss.logging:jboss-logging:jar:3.5.3.Final:test, com.fasterxml:classmate=com.fasterxml:classmate:jar:1.7.0:test, org.springframework.boot:spring-boot-starter-data-jpa=org.springframework.boot:spring-boot-starter-data-jpa:jar:3.3.3:test, org.springframework.boot:spring-boot-starter-aop=org.springframework.boot:spring-boot-starter-aop:jar:3.3.3:test, org.aspectj:aspectjweaver=org.aspectj:aspectjweaver:jar:1.9.22.1:test, org.springframework.boot:spring-boot-starter-jdbc=org.springframework.boot:spring-boot-starter-jdbc:jar:3.3.3:test, com.zaxxer:HikariCP=com.zaxxer:HikariCP:jar:5.1.0:test, org.springframework:spring-jdbc=org.springframework:spring-jdbc:jar:6.1.12:test, org.hibernate.orm:hibernate-core=org.hibernate.orm:hibernate-core:jar:6.5.2.Final:test, jakarta.persistence:jakarta.persistence-api=jakarta.persistence:jakarta.persistence-api:jar:3.1.0:test, jakarta.transaction:jakarta.transaction-api=jakarta.transaction:jakarta.transaction-api:jar:2.0.1:test, org.hibernate.common:hibernate-commons-annotations=org.hibernate.common:hibernate-commons-annotations:jar:6.0.6.Final:test, io.smallrye:jandex=io.smallrye:jandex:jar:3.1.2:test, org.glassfish.jaxb:jaxb-runtime=org.glassfish.jaxb:jaxb-runtime:jar:4.0.5:test, org.glassfish.jaxb:jaxb-core=org.glassfish.jaxb:jaxb-core:jar:4.0.5:test, org.eclipse.angus:angus-activation=org.eclipse.angus:angus-activation:jar:2.0.2:test, org.glassfish.jaxb:txw2=org.glassfish.jaxb:txw2:jar:4.0.5:test, com.sun.istack:istack-commons-runtime=com.sun.istack:istack-commons-runtime:jar:4.1.2:test, jakarta.inject:jakarta.inject-api=jakarta.inject:jakarta.inject-api:jar:2.0.1:test, org.antlr:antlr4-runtime=org.antlr:antlr4-runtime:jar:4.13.0:test, org.springframework.data:spring-data-jpa=org.springframework.data:spring-data-jpa:jar:3.3.3:test, org.springframework.data:spring-data-commons=org.springframework.data:spring-data-commons:jar:3.3.3:test, org.springframework:spring-orm=org.springframework:spring-orm:jar:6.1.12:test, org.springframework:spring-aspects=org.springframework:spring-aspects:jar:6.1.12:test, org.springframework.kafka:spring-kafka=org.springframework.kafka:spring-kafka:jar:3.2.3:test, org.springframework:spring-messaging=org.springframework:spring-messaging:jar:6.1.12:test, org.springframework:spring-tx=org.springframework:spring-tx:jar:6.1.12:test, org.springframework.retry:spring-retry=org.springframework.retry:spring-retry:jar:2.0.8:test, io.micrometer:micrometer-registry-prometheus=io.micrometer:micrometer-registry-prometheus:jar:1.13.3:test, io.micrometer:micrometer-core=io.micrometer:micrometer-core:jar:1.13.3:test, org.hdrhistogram:HdrHistogram=org.hdrhistogram:HdrHistogram:jar:2.2.2:test, org.latencyutils:LatencyUtils=org.latencyutils:LatencyUtils:jar:2.0.3:test, io.prometheus:prometheus-metrics-core=io.prometheus:prometheus-metrics-core:jar:1.2.1:test, io.prometheus:prometheus-metrics-model=io.prometheus:prometheus-metrics-model:jar:1.2.1:test, io.prometheus:prometheus-metrics-config=io.prometheus:prometheus-metrics-config:jar:1.2.1:test, io.prometheus:prometheus-metrics-tracer-common=io.prometheus:prometheus-metrics-tracer-common:jar:1.2.1:test, io.prometheus:prometheus-metrics-exposition-formats=io.prometheus:prometheus-metrics-exposition-formats:jar:1.2.1:test, io.prometheus:prometheus-metrics-shaded-protobuf=io.prometheus:prometheus-metrics-shaded-protobuf:jar:1.2.1:test, io.opentelemetry:opentelemetry-api=io.opentelemetry:opentelemetry-api:jar:1.37.0:test, io.opentelemetry:opentelemetry-context=io.opentelemetry:opentelemetry-context:jar:1.37.0:test, dev.openfeature:sdk=dev.openfeature:sdk:jar:1.9.0:test, dev.openfeature.contrib.providers:flagd=dev.openfeature.contrib.providers:flagd:jar:0.8.6:test, io.grpc:grpc-netty=io.grpc:grpc-netty:jar:1.66.0:test, io.grpc:grpc-api=io.grpc:grpc-api:jar:1.66.0:test, io.netty:netty-codec-http2=io.netty:netty-codec-http2:jar:4.1.112.Final:test, io.netty:netty-codec=io.netty:netty-codec:jar:4.1.112.Final:test, io.netty:netty-handler=io.netty:netty-handler:jar:4.1.112.Final:test, io.netty:netty-codec-http=io.netty:netty-codec-http:jar:4.1.112.Final:test, io.grpc:grpc-core=io.grpc:grpc-core:jar:1.66.0:test, com.google.android:annotations=com.google.android:annotations:jar:4.1.1.4:test, org.codehaus.mojo:animal-sniffer-annotations=org.codehaus.mojo:animal-sniffer-annotations:jar:1.24:test, io.grpc:grpc-context=io.grpc:grpc-context:jar:1.66.0:test, io.netty:netty-handler-proxy=io.netty:netty-handler-proxy:jar:4.1.112.Final:test, io.netty:netty-codec-socks=io.netty:netty-codec-socks:jar:4.1.112.Final:test, com.google.guava:guava=com.google.guava:guava:jar:33.2.1-android:test, com.google.guava:failureaccess=com.google.guava:failureaccess:jar:1.0.2:test, com.google.guava:listenablefuture=com.google.guava:listenablefuture:jar:9999.0-empty-to-avoid-conflict-with-guava:test, com.google.j2objc:j2objc-annotations=com.google.j2objc:j2objc-annotations:jar:3.0.0:test, com.google.errorprone:error_prone_annotations=com.google.errorprone:error_prone_annotations:jar:2.28.0:test, io.perfmark:perfmark-api=io.perfmark:perfmark-api:jar:0.27.0:test, io.netty:netty-transport-native-unix-common=io.netty:netty-transport-native-unix-common:jar:4.1.112.Final:test, io.grpc:grpc-util=io.grpc:grpc-util:jar:1.66.0:test, io.grpc:grpc-protobuf=io.grpc:grpc-protobuf:jar:1.66.0:test, com.google.code.findbugs:jsr305=com.google.code.findbugs:jsr305:jar:3.0.2:test, com.google.protobuf:protobuf-java=com.google.protobuf:protobuf-java:jar:3.25.3:test, com.google.api.grpc:proto-google-common-protos=com.google.api.grpc:proto-google-common-protos:jar:2.41.0:test, io.grpc:grpc-protobuf-lite=io.grpc:grpc-protobuf-lite:jar:1.66.0:test, io.grpc:grpc-stub=io.grpc:grpc-stub:jar:1.66.0:test, io.netty:netty-transport-native-epoll=io.netty:netty-transport-native-epoll:jar:linux-x86_64:4.1.112.Final:test, io.netty:netty-common=io.netty:netty-common:jar:4.1.112.Final:test, io.netty:netty-buffer=io.netty:netty-buffer:jar:4.1.112.Final:test, io.netty:netty-transport=io.netty:netty-transport:jar:4.1.112.Final:test, io.netty:netty-resolver=io.netty:netty-resolver:jar:4.1.112.Final:test, io.netty:netty-transport-classes-epoll=io.netty:netty-transport-classes-epoll:jar:4.1.112.Final:test, io.github.jamsesso:json-logic-java=io.github.jamsesso:json-logic-java:jar:1.0.7:test, com.google.code.gson:gson=com.google.code.gson:gson:jar:2.10.1:test, com.networknt:json-schema-validator=com.networknt:json-schema-validator:jar:1.5.1:test, com.ethlo.time:itu=com.ethlo.time:itu:jar:1.10.2:test, com.fasterxml.jackson.dataformat:jackson-dataformat-yaml=com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:jar:2.17.2:test, org.apache.commons:commons-collections4=org.apache.commons:commons-collections4:jar:4.4:test, org.semver4j:semver4j=org.semver4j:semver4j:jar:5.3.0:test, commons-codec:commons-codec=commons-codec:commons-codec:jar:1.16.1:test, org.springdoc:springdoc-openapi-starter-webmvc-ui=org.springdoc:springdoc-openapi-starter-webmvc-ui:jar:2.6.0:test, org.springdoc:springdoc-openapi-starter-webmvc-api=org.springdoc:springdoc-openapi-starter-webmvc-api:jar:2.6.0:test, org.springdoc:springdoc-openapi-starter-common=org.springdoc:springdoc-openapi-starter-common:jar:2.6.0:test, io.swagger.core.v3:swagger-core-jakarta=io.swagger.core.v3:swagger-core-jakarta:jar:2.2.22:test, org.apache.commons:commons-lang3=org.apache.commons:commons-lang3:jar:3.14.0:test, io.swagger.core.v3:swagger-annotations-jakarta=io.swagger.core.v3:swagger-annotations-jakarta:jar:2.2.22:test, io.swagger.core.v3:swagger-models-jakarta=io.swagger.core.v3:swagger-models-jakarta:jar:2.2.22:test, org.webjars:swagger-ui=org.webjars:swagger-ui:jar:5.17.14:test, net.logstash.logback:logstash-logback-encoder=net.logstash.logback:logstash-logback-encoder:jar:7.4:test, org.postgresql:postgresql=org.postgresql:postgresql:jar:42.7.3:test, org.checkerframework:checker-qual=org.checkerframework:checker-qual:jar:3.42.0:test, com.h2database:h2=com.h2database:h2:jar:2.2.224:test, org.flywaydb:flyway-core=org.flywaydb:flyway-core:jar:10.10.0:test, com.fasterxml.jackson.dataformat:jackson-dataformat-toml=com.fasterxml.jackson.dataformat:jackson-dataformat-toml:jar:2.17.2:test, com.example:loan-events=com.example:loan-events:jar:0.1.0-SNAPSHOT:test, com.example:loan-notification-service=com.example:loan-notification-service:jar:0.1.0-SNAPSHOT:test}                                        
+[DEBUG]   (s) projectBuildDirectory = /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target                                                                                                   
+[DEBUG]   (s) redirectTestOutputToFile = false
+[DEBUG]   (s) reportFormat = brief
+[DEBUG]   (s) reportsDirectory = /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/surefire-reports                                                                                       
+[DEBUG]   (f) rerunFailingTestsCount = 0
+[DEBUG]   (f) reuseForks = true
+[DEBUG]   (s) runOrder = filesystem
+[DEBUG]   (s) session = org.apache.maven.execution.MavenSession@11d4dbd6
+[DEBUG]   (f) shutdown = exit
+[DEBUG]   (s) skip = false
+[DEBUG]   (f) skipAfterFailureCount = 0
+[DEBUG]   (s) skipTests = false
+[DEBUG]   (s) suiteXmlFiles = []
+[DEBUG]   (s) tempDir = surefire
+[DEBUG]   (s) testClassesDirectory = /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/test-classes                                                                                       
+[DEBUG]   (s) testFailureIgnore = false
+[DEBUG]   (s) testNGArtifactName = org.testng:testng
+[DEBUG]   (s) testSourceDirectory = /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java                                                                                              
+[DEBUG]   (s) threadCountClasses = 0
+[DEBUG]   (s) threadCountMethods = 0
+[DEBUG]   (s) threadCountSuites = 0
+[DEBUG]   (s) trimStackTrace = false
+[DEBUG]   (s) useFile = true
+[DEBUG]   (s) useManifestOnlyJar = true
+[DEBUG]   (f) useModulePath = false
+[DEBUG]   (s) useSystemClassLoader = true
+[DEBUG]   (s) useUnlimitedThreads = false
+[DEBUG]   (s) workingDirectory = /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests
+[DEBUG] -- end configuration --
+[DEBUG] Using JVM: /Users/tazabreu/.sdkman/candidates/java/21.0.1-graalce/bin/java with Java version 21.0
+[DEBUG] Resolved included and excluded patterns: **/Test*.java, **/*Test.java, **/*Tests.java, **/*TestCase.java, !**/*$*                                                                                             
+[INFO] 
+[INFO] --- maven-jar-plugin:2.4:jar (default-jar) @ e2e-tests ---
+[DEBUG] Dependency collection stats {ConflictMarker.analyzeTime=70542, ConflictMarker.markTime=24000, ConflictMarker.nodeCount=74, ConflictIdSorter.graphTime=20000, ConflictIdSorter.topsortTime=14709, ConflictIdSorter.conflictIdCount=28, ConflictIdSorter.conflictIdCycleCount=0, ConflictResolver.totalTime=229583, ConflictResolver.conflictItemCount=70, DefaultDependencyCollector.collectTime=32816791, DefaultDependencyCollector.transformTime=376417}                                                                                     
+[DEBUG] org.apache.maven.plugins:maven-jar-plugin:jar:2.4
+[DEBUG]    org.apache.maven:maven-plugin-api:jar:2.0.6:compile
+[DEBUG]    org.apache.maven:maven-project:jar:2.0.6:compile
+[DEBUG]       org.apache.maven:maven-settings:jar:2.0.6:compile
+[DEBUG]       org.apache.maven:maven-profile:jar:2.0.6:compile
+[DEBUG]       org.apache.maven:maven-artifact-manager:jar:2.0.6:compile
+[DEBUG]          org.apache.maven:maven-repository-metadata:jar:2.0.6:compile
+[DEBUG]       org.apache.maven:maven-plugin-registry:jar:2.0.6:compile
+[DEBUG]       org.codehaus.plexus:plexus-container-default:jar:1.0-alpha-9-stable-1:compile
+[DEBUG]          junit:junit:jar:3.8.1:compile
+[DEBUG]          classworlds:classworlds:jar:1.1-alpha-2:compile
+[DEBUG]    org.apache.maven:maven-model:jar:2.0.6:runtime
+[DEBUG]    org.apache.maven:maven-artifact:jar:2.0.6:compile
+[DEBUG]    org.apache.maven:maven-archiver:jar:2.5:compile
+[DEBUG]       org.apache.maven:maven-core:jar:2.0.6:compile
+[DEBUG]          org.apache.maven:maven-plugin-parameter-documenter:jar:2.0.6:compile
+[DEBUG]          org.apache.maven.reporting:maven-reporting-api:jar:2.0.6:compile
+[DEBUG]             org.apache.maven.doxia:doxia-sink-api:jar:1.0-alpha-7:compile
+[DEBUG]          org.apache.maven:maven-error-diagnostics:jar:2.0.6:compile
+[DEBUG]          commons-cli:commons-cli:jar:1.0:compile
+[DEBUG]          org.apache.maven:maven-plugin-descriptor:jar:2.0.6:compile
+[DEBUG]          org.codehaus.plexus:plexus-interactivity-api:jar:1.0-alpha-4:compile
+[DEBUG]          org.apache.maven:maven-monitor:jar:2.0.6:compile
+[DEBUG]       org.codehaus.plexus:plexus-interpolation:jar:1.15:compile
+[DEBUG]    org.codehaus.plexus:plexus-archiver:jar:2.1:compile
+[DEBUG]       org.codehaus.plexus:plexus-io:jar:2.0.2:compile
+[DEBUG]    commons-lang:commons-lang:jar:2.1:compile
+[DEBUG]    org.codehaus.plexus:plexus-utils:jar:3.0:compile
+[DEBUG] Created new class realm plugin>org.apache.maven.plugins:maven-jar-plugin:2.4
+[DEBUG] Importing foreign packages into class realm plugin>org.apache.maven.plugins:maven-jar-plugin:2.4
+[DEBUG]   Imported:  < maven.api
+[DEBUG] Populating class realm plugin>org.apache.maven.plugins:maven-jar-plugin:2.4
+[DEBUG]   Included: org.apache.maven.plugins:maven-jar-plugin:jar:2.4
+[DEBUG]   Included: junit:junit:jar:3.8.1
+[DEBUG]   Included: org.apache.maven:maven-archiver:jar:2.5
+[DEBUG]   Included: org.apache.maven.reporting:maven-reporting-api:jar:2.0.6
+[DEBUG]   Included: org.apache.maven.doxia:doxia-sink-api:jar:1.0-alpha-7
+[DEBUG]   Included: commons-cli:commons-cli:jar:1.0
+[DEBUG]   Included: org.codehaus.plexus:plexus-interactivity-api:jar:1.0-alpha-4
+[DEBUG]   Included: org.codehaus.plexus:plexus-interpolation:jar:1.15
+[DEBUG]   Included: org.codehaus.plexus:plexus-archiver:jar:2.1
+[DEBUG]   Included: org.codehaus.plexus:plexus-io:jar:2.0.2
+[DEBUG]   Included: commons-lang:commons-lang:jar:2.1
+[DEBUG]   Included: org.codehaus.plexus:plexus-utils:jar:3.0
+[DEBUG] Configuring mojo org.apache.maven.plugins:maven-jar-plugin:2.4:jar from plugin realm ClassRealm[plugin>org.apache.maven.plugins:maven-jar-plugin:2.4, parent: jdk.internal.loader.ClassLoaders$AppClassLoader@18b4aac2]                                                                                                  
+[DEBUG] Configuring mojo 'org.apache.maven.plugins:maven-jar-plugin:2.4:jar' with basic configurator -->
+[DEBUG]   (f) classesDirectory = /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/classes                                                                                                
+[DEBUG]   (f) defaultManifestFile = /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/classes/META-INF/MANIFEST.MF                                                                        
+[DEBUG]   (f) finalName = e2e-tests-0.1.0-SNAPSHOT
+[DEBUG]   (f) forceCreation = false
+[DEBUG]   (f) outputDirectory = /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target                                                                                                         
+[DEBUG]   (f) project = MavenProject: com.example:e2e-tests:0.1.0-SNAPSHOT @ /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/pom.xml                                                           
+[DEBUG]   (f) session = org.apache.maven.execution.MavenSession@11d4dbd6
+[DEBUG]   (f) skipIfEmpty = false
+[DEBUG]   (f) useDefaultManifestFile = false
+[DEBUG] -- end configuration --
+[WARNING] JAR will be empty - no content was marked for inclusion!
+[DEBUG] isUp2date: true
+[DEBUG] Archive /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/e2e-tests-0.1.0-SNAPSHOT.jar is uptodate.                                                                               
+[INFO] 
+[INFO] --- maven-failsafe-plugin:3.2.5:integration-test (default) @ e2e-tests ---
+[DEBUG] Dependency collection stats {ConflictMarker.analyzeTime=40750, ConflictMarker.markTime=23209, ConflictMarker.nodeCount=78, ConflictIdSorter.graphTime=15917, ConflictIdSorter.topsortTime=19208, ConflictIdSorter.conflictIdCount=39, ConflictIdSorter.conflictIdCycleCount=0, ConflictResolver.totalTime=286416, ConflictResolver.conflictItemCount=76, DefaultDependencyCollector.collectTime=3231250, DefaultDependencyCollector.transformTime=401292}                                                                                      
+[DEBUG] org.apache.maven.plugins:maven-failsafe-plugin:jar:3.2.5
+[DEBUG]    org.apache.maven.surefire:maven-surefire-common:jar:3.2.5:compile
+[DEBUG]       org.apache.maven.surefire:surefire-api:jar:3.2.5:compile
+[DEBUG]          org.apache.maven.surefire:surefire-logger-api:jar:3.2.5:compile
+[DEBUG]       org.apache.maven.surefire:surefire-extensions-api:jar:3.2.5:compile
+[DEBUG]       org.apache.maven.surefire:surefire-booter:jar:3.2.5:compile
+[DEBUG]          org.apache.maven.surefire:surefire-extensions-spi:jar:3.2.5:compile
+[DEBUG]       org.eclipse.aether:aether-util:jar:1.0.0.v20140518:compile
+[DEBUG]          org.eclipse.aether:aether-api:jar:1.0.0.v20140518:compile
+[DEBUG]       org.apache.maven.shared:maven-common-artifact-filters:jar:3.1.1:compile (version managed from default) (exclusions managed from default)                                                                
+[DEBUG]          org.apache.maven:maven-artifact:jar:3.2.5:provided (scope managed from default) (version managed from default)                                                                                       
+[DEBUG]             org.codehaus.plexus:plexus-utils:jar:4.0.0:provided (version managed from default)
+[DEBUG]          org.apache.maven:maven-core:jar:3.2.5:provided (scope managed from default) (version managed from default)                                                                                           
+[DEBUG]             org.apache.maven:maven-settings:jar:3.2.5:provided (version managed from default)
+[DEBUG]             org.apache.maven:maven-settings-builder:jar:3.2.5:provided
+[DEBUG]             org.apache.maven:maven-repository-metadata:jar:3.2.5:provided
+[DEBUG]             org.apache.maven:maven-model-builder:jar:3.2.5:provided
+[DEBUG]             org.apache.maven:maven-aether-provider:jar:3.2.5:provided
+[DEBUG]                org.eclipse.aether:aether-spi:jar:1.0.0.v20140518:provided
+[DEBUG]             org.eclipse.aether:aether-impl:jar:1.0.0.v20140518:provided
+[DEBUG]             org.eclipse.sisu:org.eclipse.sisu.plexus:jar:0.9.0.M2:provided (version managed from default)                                                                                                     
+[DEBUG]                javax.annotation:javax.annotation-api:jar:1.2:provided
+[DEBUG]                javax.enterprise:cdi-api:jar:1.2:provided
+[DEBUG]                org.eclipse.sisu:org.eclipse.sisu.inject:jar:0.9.0.M2:provided (version managed from default)                                                                                                  
+[DEBUG]             org.sonatype.sisu:sisu-guice:jar:no_aop:3.2.3:provided
+[DEBUG]                javax.inject:javax.inject:jar:1:provided
+[DEBUG]                aopalliance:aopalliance:jar:1.0:provided
+[DEBUG]                com.google.guava:guava:jar:16.0.1:provided
+[DEBUG]             org.codehaus.plexus:plexus-interpolation:jar:1.21:provided
+[DEBUG]             org.codehaus.plexus:plexus-classworlds:jar:2.5.2:provided
+[DEBUG]             org.codehaus.plexus:plexus-component-annotations:jar:1.5.5:provided
+[DEBUG]             org.sonatype.plexus:plexus-sec-dispatcher:jar:1.3:provided
+[DEBUG]                org.sonatype.plexus:plexus-cipher:jar:1.4:provided
+[DEBUG]          org.apache.maven:maven-plugin-api:jar:3.2.5:provided (scope managed from default) (version managed from default)                                                                                     
+[DEBUG]          commons-io:commons-io:jar:2.15.1:compile (version managed from default)
+[DEBUG]       org.codehaus.plexus:plexus-java:jar:1.2.0:compile (version managed from default)
+[DEBUG]          org.ow2.asm:asm:jar:9.6:compile
+[DEBUG]          com.thoughtworks.qdox:qdox:jar:2.0.3:compile
+[DEBUG]       org.apache.maven.surefire:surefire-shared-utils:jar:3.2.5:compile
+[DEBUG] Created new class realm plugin>org.apache.maven.plugins:maven-failsafe-plugin:3.2.5
+[DEBUG] Importing foreign packages into class realm plugin>org.apache.maven.plugins:maven-failsafe-plugin:3.2.5                                                                                                       
+[DEBUG]   Imported:  < maven.api
+[DEBUG] Populating class realm plugin>org.apache.maven.plugins:maven-failsafe-plugin:3.2.5
+[DEBUG]   Included: org.apache.maven.plugins:maven-failsafe-plugin:jar:3.2.5
+[DEBUG]   Included: org.apache.maven.surefire:maven-surefire-common:jar:3.2.5
+[DEBUG]   Included: org.apache.maven.surefire:surefire-api:jar:3.2.5
+[DEBUG]   Included: org.apache.maven.surefire:surefire-logger-api:jar:3.2.5
+[DEBUG]   Included: org.apache.maven.surefire:surefire-extensions-api:jar:3.2.5
+[DEBUG]   Included: org.apache.maven.surefire:surefire-booter:jar:3.2.5
+[DEBUG]   Included: org.apache.maven.surefire:surefire-extensions-spi:jar:3.2.5
+[DEBUG]   Included: org.eclipse.aether:aether-util:jar:1.0.0.v20140518
+[DEBUG]   Included: org.apache.maven.shared:maven-common-artifact-filters:jar:3.1.1
+[DEBUG]   Included: commons-io:commons-io:jar:2.15.1
+[DEBUG]   Included: org.codehaus.plexus:plexus-java:jar:1.2.0
+[DEBUG]   Included: org.ow2.asm:asm:jar:9.6
+[DEBUG]   Included: com.thoughtworks.qdox:qdox:jar:2.0.3
+[DEBUG]   Included: org.apache.maven.surefire:surefire-shared-utils:jar:3.2.5
+[DEBUG] Configuring mojo org.apache.maven.plugins:maven-failsafe-plugin:3.2.5:integration-test from plugin realm ClassRealm[plugin>org.apache.maven.plugins:maven-failsafe-plugin:3.2.5, parent: jdk.internal.loader.ClassLoaders$AppClassLoader@18b4aac2]                                                                       
+[DEBUG] Configuring mojo 'org.apache.maven.plugins:maven-failsafe-plugin:3.2.5:integration-test' with basic configurator -->                                                                                          
+[DEBUG]   (f) additionalClasspathDependencies = []
+[DEBUG]   (s) additionalClasspathElements = []
+[DEBUG]   (s) basedir = /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests
+[DEBUG]   (s) childDelegation = false
+[DEBUG]   (s) classpathDependencyExcludes = []
+[DEBUG]   (s) defaultClassesDirectory = /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/classes                                                                                         
+[DEBUG]   (s) dependenciesToScan = []
+[DEBUG]   (s) disableXmlReport = false
+[DEBUG]   (s) enableAssertions = true
+[DEBUG]   (s) encoding = UTF-8
+[DEBUG]   (s) excludeJUnit5Engines = []
+[DEBUG]   (f) excludedEnvironmentVariables = []
+[DEBUG]   (s) excludes = []
+[DEBUG]   (s) failIfNoSpecifiedTests = true
+[DEBUG]   (f) failIfNoSpecifiedTestsDeprecated = true
+[DEBUG]   (s) failIfNoTests = false
+[DEBUG]   (f) forkCount = 1
+[DEBUG]   (s) forkedProcessExitTimeoutInSeconds = 30
+[DEBUG]   (s) includeJUnit5Engines = []
+[DEBUG]   (s) includes = [**/*IT.java]
+[DEBUG]   (s) junitArtifactName = junit:junit
+[DEBUG]   (f) parallelMavenExecution = false
+[DEBUG]   (s) parallelOptimized = true
+[DEBUG]   (s) perCoreThreadCount = true
+[DEBUG]   (s) pluginArtifactMap = {org.apache.maven.plugins:maven-failsafe-plugin=org.apache.maven.plugins:maven-failsafe-plugin:maven-plugin:3.2.5:, org.apache.maven.surefire:maven-surefire-common=org.apache.maven.surefire:maven-surefire-common:jar:3.2.5:compile, org.apache.maven.surefire:surefire-api=org.apache.maven.surefire:surefire-api:jar:3.2.5:compile, org.apache.maven.surefire:surefire-logger-api=org.apache.maven.surefire:surefire-logger-api:jar:3.2.5:compile, org.apache.maven.surefire:surefire-extensions-api=org.apache.maven.surefire:surefire-extensions-api:jar:3.2.5:compile, org.apache.maven.surefire:surefire-booter=org.apache.maven.surefire:surefire-booter:jar:3.2.5:compile, org.apache.maven.surefire:surefire-extensions-spi=org.apache.maven.surefire:surefire-extensions-spi:jar:3.2.5:compile, org.eclipse.aether:aether-util=org.eclipse.aether:aether-util:jar:1.0.0.v20140518:compile, org.eclipse.aether:aether-api=org.eclipse.aether:aether-api:jar:1.0.0.v20140518:compile, org.apache.maven.shared:maven-common-artifact-filters=org.apache.maven.shared:maven-common-artifact-filters:jar:3.1.1:compile, commons-io:commons-io=commons-io:commons-io:jar:2.15.1:compile, org.codehaus.plexus:plexus-java=org.codehaus.plexus:plexus-java:jar:1.2.0:compile, org.ow2.asm:asm=org.ow2.asm:asm:jar:9.6:compile, com.thoughtworks.qdox:qdox=com.thoughtworks.qdox:qdox:jar:2.0.3:compile, org.apache.maven.surefire:surefire-shared-utils=org.apache.maven.surefire:surefire-shared-utils:jar:3.2.5:compile}                                                                                                     
+[DEBUG]   (f) pluginDescriptor = Component Descriptor: role: 'org.apache.maven.plugin.Mojo', implementation: 'org.apache.maven.plugins.maven_failsafe_plugin.HelpMojo', role hint: 'org.apache.maven.plugins:maven-failsafe-plugin:3.2.5:help'                                                                                   
+role: 'org.apache.maven.plugin.Mojo', implementation: 'org.apache.maven.plugin.failsafe.IntegrationTestMojo', role hint: 'org.apache.maven.plugins:maven-failsafe-plugin:3.2.5:integration-test'                      
+role: 'org.apache.maven.plugin.Mojo', implementation: 'org.apache.maven.plugin.failsafe.VerifyMojo', role hint: 'org.apache.maven.plugins:maven-failsafe-plugin:3.2.5:verify'                                         
+---
+[DEBUG]   (s) printSummary = true
+[DEBUG]   (s) project = MavenProject: com.example:e2e-tests:0.1.0-SNAPSHOT @ /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/pom.xml                                                           
+[DEBUG]   (s) projectArtifactMap = {org.springframework.boot:spring-boot-starter-test=org.springframework.boot:spring-boot-starter-test:jar:3.3.3:test, org.springframework.boot:spring-boot-starter=org.springframework.boot:spring-boot-starter:jar:3.3.3:test, org.springframework.boot:spring-boot=org.springframework.boot:spring-boot:jar:3.3.3:test, org.springframework.boot:spring-boot-autoconfigure=org.springframework.boot:spring-boot-autoconfigure:jar:3.3.3:test, org.springframework.boot:spring-boot-starter-logging=org.springframework.boot:spring-boot-starter-logging:jar:3.3.3:test, ch.qos.logback:logback-classic=ch.qos.logback:logback-classic:jar:1.5.7:test, ch.qos.logback:logback-core=ch.qos.logback:logback-core:jar:1.5.7:test, org.apache.logging.log4j:log4j-to-slf4j=org.apache.logging.log4j:log4j-to-slf4j:jar:2.23.1:test, org.apache.logging.log4j:log4j-api=org.apache.logging.log4j:log4j-api:jar:2.23.1:test, org.slf4j:jul-to-slf4j=org.slf4j:jul-to-slf4j:jar:2.0.16:test, jakarta.annotation:jakarta.annotation-api=jakarta.annotation:jakarta.annotation-api:jar:2.1.1:test, org.yaml:snakeyaml=org.yaml:snakeyaml:jar:2.2:test, org.springframework.boot:spring-boot-test=org.springframework.boot:spring-boot-test:jar:3.3.3:test, org.springframework.boot:spring-boot-test-autoconfigure=org.springframework.boot:spring-boot-test-autoconfigure:jar:3.3.3:test, com.jayway.jsonpath:json-path=com.jayway.jsonpath:json-path:jar:2.9.0:test, jakarta.xml.bind:jakarta.xml.bind-api=jakarta.xml.bind:jakarta.xml.bind-api:jar:4.0.2:test, jakarta.activation:jakarta.activation-api=jakarta.activation:jakarta.activation-api:jar:2.1.3:test, net.minidev:json-smart=net.minidev:json-smart:jar:2.5.1:test, net.minidev:accessors-smart=net.minidev:accessors-smart:jar:2.5.1:test, org.ow2.asm:asm=org.ow2.asm:asm:jar:9.6:test, org.assertj:assertj-core=org.assertj:assertj-core:jar:3.25.3:test, net.bytebuddy:byte-buddy=net.bytebuddy:byte-buddy:jar:1.14.19:test, org.hamcrest:hamcrest=org.hamcrest:hamcrest:jar:2.2:test, org.junit.jupiter:junit-jupiter=org.junit.jupiter:junit-jupiter:jar:5.10.3:test, org.junit.jupiter:junit-jupiter-api=org.junit.jupiter:junit-jupiter-api:jar:5.10.3:test, org.opentest4j:opentest4j=org.opentest4j:opentest4j:jar:1.3.0:test, org.junit.platform:junit-platform-commons=org.junit.platform:junit-platform-commons:jar:1.10.3:test, org.apiguardian:apiguardian-api=org.apiguardian:apiguardian-api:jar:1.1.2:test, org.junit.jupiter:junit-jupiter-params=org.junit.jupiter:junit-jupiter-params:jar:5.10.3:test, org.junit.jupiter:junit-jupiter-engine=org.junit.jupiter:junit-jupiter-engine:jar:5.10.3:test, org.junit.platform:junit-platform-engine=org.junit.platform:junit-platform-engine:jar:1.10.3:test, org.mockito:mockito-core=org.mockito:mockito-core:jar:5.11.0:test, net.bytebuddy:byte-buddy-agent=net.bytebuddy:byte-buddy-agent:jar:1.14.19:test, org.objenesis:objenesis=org.objenesis:objenesis:jar:3.3:test, org.mockito:mockito-junit-jupiter=org.mockito:mockito-junit-jupiter:jar:5.11.0:test, org.skyscreamer:jsonassert=org.skyscreamer:jsonassert:jar:1.5.3:test, com.vaadin.external.google:android-json=com.vaadin.external.google:android-json:jar:0.0.20131108.vaadin1:test, org.springframework:spring-core=org.springframework:spring-core:jar:6.1.12:test, org.springframework:spring-jcl=org.springframework:spring-jcl:jar:6.1.12:test, org.springframework:spring-test=org.springframework:spring-test:jar:6.1.12:test, org.xmlunit:xmlunit-core=org.xmlunit:xmlunit-core:jar:2.9.1:test, org.springframework.boot:spring-boot-starter-web=org.springframework.boot:spring-boot-starter-web:jar:3.3.3:test, org.springframework.boot:spring-boot-starter-json=org.springframework.boot:spring-boot-starter-json:jar:3.3.3:test, com.fasterxml.jackson.core:jackson-databind=com.fasterxml.jackson.core:jackson-databind:jar:2.17.2:test, com.fasterxml.jackson.core:jackson-annotations=com.fasterxml.jackson.core:jackson-annotations:jar:2.17.2:test, com.fasterxml.jackson.core:jackson-core=com.fasterxml.jackson.core:jackson-core:jar:2.17.2:test, com.fasterxml.jackson.datatype:jackson-datatype-jdk8=com.fasterxml.jackson.datatype:jackson-datatype-jdk8:jar:2.17.2:test, com.fasterxml.jackson.datatype:jackson-datatype-jsr310=com.fasterxml.jackson.datatype:jackson-datatype-jsr310:jar:2.17.2:test, com.fasterxml.jackson.module:jackson-module-parameter-names=com.fasterxml.jackson.module:jackson-module-parameter-names:jar:2.17.2:test, org.springframework.boot:spring-boot-starter-tomcat=org.springframework.boot:spring-boot-starter-tomcat:jar:3.3.3:test, org.apache.tomcat.embed:tomcat-embed-core=org.apache.tomcat.embed:tomcat-embed-core:jar:10.1.28:test, org.apache.tomcat.embed:tomcat-embed-el=org.apache.tomcat.embed:tomcat-embed-el:jar:10.1.28:test, org.apache.tomcat.embed:tomcat-embed-websocket=org.apache.tomcat.embed:tomcat-embed-websocket:jar:10.1.28:test, org.springframework:spring-web=org.springframework:spring-web:jar:6.1.12:test, org.springframework:spring-beans=org.springframework:spring-beans:jar:6.1.12:test, io.micrometer:micrometer-observation=io.micrometer:micrometer-observation:jar:1.13.3:test, io.micrometer:micrometer-commons=io.micrometer:micrometer-commons:jar:1.13.3:test, org.springframework:spring-webmvc=org.springframework:spring-webmvc:jar:6.1.12:test, org.springframework:spring-aop=org.springframework:spring-aop:jar:6.1.12:test, org.springframework:spring-context=org.springframework:spring-context:jar:6.1.12:test, org.springframework:spring-expression=org.springframework:spring-expression:jar:6.1.12:test, org.testcontainers:junit-jupiter=org.testcontainers:junit-jupiter:jar:1.19.8:test, org.testcontainers:testcontainers=org.testcontainers:testcontainers:jar:1.19.8:test, junit:junit=junit:junit:jar:4.13.2:test, org.hamcrest:hamcrest-core=org.hamcrest:hamcrest-core:jar:2.2:test, org.apache.commons:commons-compress=org.apache.commons:commons-compress:jar:1.24.0:test, org.rnorth.duct-tape:duct-tape=org.rnorth.duct-tape:duct-tape:jar:1.0.8:test, org.jetbrains:annotations=org.jetbrains:annotations:jar:17.0.0:test, com.github.docker-java:docker-java-api=com.github.docker-java:docker-java-api:jar:3.3.6:test, com.github.docker-java:docker-java-transport-zerodep=com.github.docker-java:docker-java-transport-zerodep:jar:3.3.6:test, com.github.docker-java:docker-java-transport=com.github.docker-java:docker-java-transport:jar:3.3.6:test, net.java.dev.jna:jna=net.java.dev.jna:jna:jar:5.13.0:test, org.testcontainers:postgresql=org.testcontainers:postgresql:jar:1.19.8:test, org.testcontainers:jdbc=org.testcontainers:jdbc:jar:1.19.8:test, org.testcontainers:database-commons=org.testcontainers:database-commons:jar:1.19.8:test, org.awaitility:awaitility=org.awaitility:awaitility:jar:4.2.0:test, org.apache.kafka:kafka-clients=org.apache.kafka:kafka-clients:jar:3.7.1:test, com.github.luben:zstd-jni=com.github.luben:zstd-jni:jar:1.5.6-3:test, org.lz4:lz4-java=org.lz4:lz4-java:jar:1.8.0:test, org.xerial.snappy:snappy-java=org.xerial.snappy:snappy-java:jar:1.1.10.5:test, org.slf4j:slf4j-api=org.slf4j:slf4j-api:jar:2.0.16:test, com.example:loan-api=com.example:loan-api:jar:0.1.0-SNAPSHOT:test, org.springframework.boot:spring-boot-starter-actuator=org.springframework.boot:spring-boot-starter-actuator:jar:3.3.3:test, org.springframework.boot:spring-boot-actuator-autoconfigure=org.springframework.boot:spring-boot-actuator-autoconfigure:jar:3.3.3:test, org.springframework.boot:spring-boot-actuator=org.springframework.boot:spring-boot-actuator:jar:3.3.3:test, io.micrometer:micrometer-jakarta9=io.micrometer:micrometer-jakarta9:jar:1.13.3:test, org.springframework.boot:spring-boot-starter-validation=org.springframework.boot:spring-boot-starter-validation:jar:3.3.3:test, org.hibernate.validator:hibernate-validator=org.hibernate.validator:hibernate-validator:jar:8.0.1.Final:test, jakarta.validation:jakarta.validation-api=jakarta.validation:jakarta.validation-api:jar:3.0.2:test, org.jboss.logging:jboss-logging=org.jboss.logging:jboss-logging:jar:3.5.3.Final:test, com.fasterxml:classmate=com.fasterxml:classmate:jar:1.7.0:test, org.springframework.boot:spring-boot-starter-data-jpa=org.springframework.boot:spring-boot-starter-data-jpa:jar:3.3.3:test, org.springframework.boot:spring-boot-starter-aop=org.springframework.boot:spring-boot-starter-aop:jar:3.3.3:test, org.aspectj:aspectjweaver=org.aspectj:aspectjweaver:jar:1.9.22.1:test, org.springframework.boot:spring-boot-starter-jdbc=org.springframework.boot:spring-boot-starter-jdbc:jar:3.3.3:test, com.zaxxer:HikariCP=com.zaxxer:HikariCP:jar:5.1.0:test, org.springframework:spring-jdbc=org.springframework:spring-jdbc:jar:6.1.12:test, org.hibernate.orm:hibernate-core=org.hibernate.orm:hibernate-core:jar:6.5.2.Final:test, jakarta.persistence:jakarta.persistence-api=jakarta.persistence:jakarta.persistence-api:jar:3.1.0:test, jakarta.transaction:jakarta.transaction-api=jakarta.transaction:jakarta.transaction-api:jar:2.0.1:test, org.hibernate.common:hibernate-commons-annotations=org.hibernate.common:hibernate-commons-annotations:jar:6.0.6.Final:test, io.smallrye:jandex=io.smallrye:jandex:jar:3.1.2:test, org.glassfish.jaxb:jaxb-runtime=org.glassfish.jaxb:jaxb-runtime:jar:4.0.5:test, org.glassfish.jaxb:jaxb-core=org.glassfish.jaxb:jaxb-core:jar:4.0.5:test, org.eclipse.angus:angus-activation=org.eclipse.angus:angus-activation:jar:2.0.2:test, org.glassfish.jaxb:txw2=org.glassfish.jaxb:txw2:jar:4.0.5:test, com.sun.istack:istack-commons-runtime=com.sun.istack:istack-commons-runtime:jar:4.1.2:test, jakarta.inject:jakarta.inject-api=jakarta.inject:jakarta.inject-api:jar:2.0.1:test, org.antlr:antlr4-runtime=org.antlr:antlr4-runtime:jar:4.13.0:test, org.springframework.data:spring-data-jpa=org.springframework.data:spring-data-jpa:jar:3.3.3:test, org.springframework.data:spring-data-commons=org.springframework.data:spring-data-commons:jar:3.3.3:test, org.springframework:spring-orm=org.springframework:spring-orm:jar:6.1.12:test, org.springframework:spring-aspects=org.springframework:spring-aspects:jar:6.1.12:test, org.springframework.kafka:spring-kafka=org.springframework.kafka:spring-kafka:jar:3.2.3:test, org.springframework:spring-messaging=org.springframework:spring-messaging:jar:6.1.12:test, org.springframework:spring-tx=org.springframework:spring-tx:jar:6.1.12:test, org.springframework.retry:spring-retry=org.springframework.retry:spring-retry:jar:2.0.8:test, io.micrometer:micrometer-registry-prometheus=io.micrometer:micrometer-registry-prometheus:jar:1.13.3:test, io.micrometer:micrometer-core=io.micrometer:micrometer-core:jar:1.13.3:test, org.hdrhistogram:HdrHistogram=org.hdrhistogram:HdrHistogram:jar:2.2.2:test, org.latencyutils:LatencyUtils=org.latencyutils:LatencyUtils:jar:2.0.3:test, io.prometheus:prometheus-metrics-core=io.prometheus:prometheus-metrics-core:jar:1.2.1:test, io.prometheus:prometheus-metrics-model=io.prometheus:prometheus-metrics-model:jar:1.2.1:test, io.prometheus:prometheus-metrics-config=io.prometheus:prometheus-metrics-config:jar:1.2.1:test, io.prometheus:prometheus-metrics-tracer-common=io.prometheus:prometheus-metrics-tracer-common:jar:1.2.1:test, io.prometheus:prometheus-metrics-exposition-formats=io.prometheus:prometheus-metrics-exposition-formats:jar:1.2.1:test, io.prometheus:prometheus-metrics-shaded-protobuf=io.prometheus:prometheus-metrics-shaded-protobuf:jar:1.2.1:test, io.opentelemetry:opentelemetry-api=io.opentelemetry:opentelemetry-api:jar:1.37.0:test, io.opentelemetry:opentelemetry-context=io.opentelemetry:opentelemetry-context:jar:1.37.0:test, dev.openfeature:sdk=dev.openfeature:sdk:jar:1.9.0:test, dev.openfeature.contrib.providers:flagd=dev.openfeature.contrib.providers:flagd:jar:0.8.6:test, io.grpc:grpc-netty=io.grpc:grpc-netty:jar:1.66.0:test, io.grpc:grpc-api=io.grpc:grpc-api:jar:1.66.0:test, io.netty:netty-codec-http2=io.netty:netty-codec-http2:jar:4.1.112.Final:test, io.netty:netty-codec=io.netty:netty-codec:jar:4.1.112.Final:test, io.netty:netty-handler=io.netty:netty-handler:jar:4.1.112.Final:test, io.netty:netty-codec-http=io.netty:netty-codec-http:jar:4.1.112.Final:test, io.grpc:grpc-core=io.grpc:grpc-core:jar:1.66.0:test, com.google.android:annotations=com.google.android:annotations:jar:4.1.1.4:test, org.codehaus.mojo:animal-sniffer-annotations=org.codehaus.mojo:animal-sniffer-annotations:jar:1.24:test, io.grpc:grpc-context=io.grpc:grpc-context:jar:1.66.0:test, io.netty:netty-handler-proxy=io.netty:netty-handler-proxy:jar:4.1.112.Final:test, io.netty:netty-codec-socks=io.netty:netty-codec-socks:jar:4.1.112.Final:test, com.google.guava:guava=com.google.guava:guava:jar:33.2.1-android:test, com.google.guava:failureaccess=com.google.guava:failureaccess:jar:1.0.2:test, com.google.guava:listenablefuture=com.google.guava:listenablefuture:jar:9999.0-empty-to-avoid-conflict-with-guava:test, com.google.j2objc:j2objc-annotations=com.google.j2objc:j2objc-annotations:jar:3.0.0:test, com.google.errorprone:error_prone_annotations=com.google.errorprone:error_prone_annotations:jar:2.28.0:test, io.perfmark:perfmark-api=io.perfmark:perfmark-api:jar:0.27.0:test, io.netty:netty-transport-native-unix-common=io.netty:netty-transport-native-unix-common:jar:4.1.112.Final:test, io.grpc:grpc-util=io.grpc:grpc-util:jar:1.66.0:test, io.grpc:grpc-protobuf=io.grpc:grpc-protobuf:jar:1.66.0:test, com.google.code.findbugs:jsr305=com.google.code.findbugs:jsr305:jar:3.0.2:test, com.google.protobuf:protobuf-java=com.google.protobuf:protobuf-java:jar:3.25.3:test, com.google.api.grpc:proto-google-common-protos=com.google.api.grpc:proto-google-common-protos:jar:2.41.0:test, io.grpc:grpc-protobuf-lite=io.grpc:grpc-protobuf-lite:jar:1.66.0:test, io.grpc:grpc-stub=io.grpc:grpc-stub:jar:1.66.0:test, io.netty:netty-transport-native-epoll=io.netty:netty-transport-native-epoll:jar:linux-x86_64:4.1.112.Final:test, io.netty:netty-common=io.netty:netty-common:jar:4.1.112.Final:test, io.netty:netty-buffer=io.netty:netty-buffer:jar:4.1.112.Final:test, io.netty:netty-transport=io.netty:netty-transport:jar:4.1.112.Final:test, io.netty:netty-resolver=io.netty:netty-resolver:jar:4.1.112.Final:test, io.netty:netty-transport-classes-epoll=io.netty:netty-transport-classes-epoll:jar:4.1.112.Final:test, io.github.jamsesso:json-logic-java=io.github.jamsesso:json-logic-java:jar:1.0.7:test, com.google.code.gson:gson=com.google.code.gson:gson:jar:2.10.1:test, com.networknt:json-schema-validator=com.networknt:json-schema-validator:jar:1.5.1:test, com.ethlo.time:itu=com.ethlo.time:itu:jar:1.10.2:test, com.fasterxml.jackson.dataformat:jackson-dataformat-yaml=com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:jar:2.17.2:test, org.apache.commons:commons-collections4=org.apache.commons:commons-collections4:jar:4.4:test, org.semver4j:semver4j=org.semver4j:semver4j:jar:5.3.0:test, commons-codec:commons-codec=commons-codec:commons-codec:jar:1.16.1:test, org.springdoc:springdoc-openapi-starter-webmvc-ui=org.springdoc:springdoc-openapi-starter-webmvc-ui:jar:2.6.0:test, org.springdoc:springdoc-openapi-starter-webmvc-api=org.springdoc:springdoc-openapi-starter-webmvc-api:jar:2.6.0:test, org.springdoc:springdoc-openapi-starter-common=org.springdoc:springdoc-openapi-starter-common:jar:2.6.0:test, io.swagger.core.v3:swagger-core-jakarta=io.swagger.core.v3:swagger-core-jakarta:jar:2.2.22:test, org.apache.commons:commons-lang3=org.apache.commons:commons-lang3:jar:3.14.0:test, io.swagger.core.v3:swagger-annotations-jakarta=io.swagger.core.v3:swagger-annotations-jakarta:jar:2.2.22:test, io.swagger.core.v3:swagger-models-jakarta=io.swagger.core.v3:swagger-models-jakarta:jar:2.2.22:test, org.webjars:swagger-ui=org.webjars:swagger-ui:jar:5.17.14:test, net.logstash.logback:logstash-logback-encoder=net.logstash.logback:logstash-logback-encoder:jar:7.4:test, org.postgresql:postgresql=org.postgresql:postgresql:jar:42.7.3:test, org.checkerframework:checker-qual=org.checkerframework:checker-qual:jar:3.42.0:test, com.h2database:h2=com.h2database:h2:jar:2.2.224:test, org.flywaydb:flyway-core=org.flywaydb:flyway-core:jar:10.10.0:test, com.fasterxml.jackson.dataformat:jackson-dataformat-toml=com.fasterxml.jackson.dataformat:jackson-dataformat-toml:jar:2.17.2:test, com.example:loan-events=com.example:loan-events:jar:0.1.0-SNAPSHOT:test, com.example:loan-notification-service=com.example:loan-notification-service:jar:0.1.0-SNAPSHOT:test}                                        
+[DEBUG]   (s) projectBuildDirectory = /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target                                                                                                   
+[DEBUG]   (s) redirectTestOutputToFile = false
+[DEBUG]   (s) reportFormat = brief
+[DEBUG]   (s) reportsDirectory = /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/failsafe-reports                                                                                       
+[DEBUG]   (f) rerunFailingTestsCount = 0
+[DEBUG]   (f) reuseForks = true
+[DEBUG]   (s) runOrder = filesystem
+[DEBUG]   (s) session = org.apache.maven.execution.MavenSession@11d4dbd6
+[DEBUG]   (f) shutdown = exit
+[DEBUG]   (s) skip = false
+[DEBUG]   (f) skipAfterFailureCount = 0
+[DEBUG]   (s) skipTests = false
+[DEBUG]   (s) suiteXmlFiles = []
+[DEBUG]   (s) summaryFile = /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/failsafe-reports/failsafe-summary.xml                                                                       
+[DEBUG]   (s) tempDir = surefire
+[DEBUG]   (s) test = FullLifecycleIT
+[DEBUG]   (s) testClassesDirectory = /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/test-classes                                                                                       
+[DEBUG]   (s) testNGArtifactName = org.testng:testng
+[DEBUG]   (s) testSourceDirectory = /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java                                                                                              
+[DEBUG]   (s) threadCountClasses = 0
+[DEBUG]   (s) threadCountMethods = 0
+[DEBUG]   (s) threadCountSuites = 0
+[DEBUG]   (s) trimStackTrace = false
+[DEBUG]   (s) useFile = true
+[DEBUG]   (s) useManifestOnlyJar = true
+[DEBUG]   (f) useModulePath = false
+[DEBUG]   (s) useSystemClassLoader = true
+[DEBUG]   (s) useUnlimitedThreads = false
+[DEBUG]   (s) workingDirectory = /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests
+[DEBUG] -- end configuration --
+[DEBUG] Using JVM: /Users/tazabreu/.sdkman/candidates/java/21.0.1-graalce/bin/java with Java version 21.0
+[DEBUG] Resolved included and excluded patterns: FullLifecycleIT
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.857 s
+[INFO] Finished at: 2025-09-11T01:48:53-03:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-failsafe-plugin:3.2.5:integration-test (default) on project e2e-tests: No tests matching pattern "FullLifecycleIT" were executed! (Set -Dfailsafe.failIfNoSpecifiedTests=false to ignore this error.) -> [Help 1]                                                  
+org.apache.maven.lifecycle.LifecycleExecutionException: Failed to execute goal org.apache.maven.plugins:maven-failsafe-plugin:3.2.5:integration-test (default) on project e2e-tests: No tests matching pattern "FullLifecycleIT" were executed! (Set -Dfailsafe.failIfNoSpecifiedTests=false to ignore this error.)              
+    at org.apache.maven.lifecycle.internal.MojoExecutor.doExecute2 (MojoExecutor.java:375)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.doExecute (MojoExecutor.java:351)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:215)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:171)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:163)
+    at org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject (LifecycleModuleBuilder.java:117)                                                                                                      
+    at org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject (LifecycleModuleBuilder.java:81)                                                                                                       
+    at org.apache.maven.lifecycle.internal.builder.singlethreaded.SingleThreadedBuilder.build (SingleThreadedBuilder.java:56)                                                                                         
+    at org.apache.maven.lifecycle.internal.LifecycleStarter.execute (LifecycleStarter.java:128)
+    at org.apache.maven.DefaultMaven.doExecute (DefaultMaven.java:294)
+    at org.apache.maven.DefaultMaven.doExecute (DefaultMaven.java:192)
+    at org.apache.maven.DefaultMaven.execute (DefaultMaven.java:105)
+    at org.apache.maven.cli.MavenCli.execute (MavenCli.java:960)
+    at org.apache.maven.cli.MavenCli.doMain (MavenCli.java:293)
+    at org.apache.maven.cli.MavenCli.main (MavenCli.java:196)
+    at jdk.internal.reflect.DirectMethodHandleAccessor.invoke (DirectMethodHandleAccessor.java:103)
+    at java.lang.reflect.Method.invoke (Method.java:580)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.launchEnhanced (Launcher.java:282)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.launch (Launcher.java:225)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.mainWithExitCode (Launcher.java:406)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.main (Launcher.java:347)
+Caused by: org.apache.maven.plugin.MojoFailureException: No tests matching pattern "FullLifecycleIT" were executed! (Set -Dfailsafe.failIfNoSpecifiedTests=false to ignore this error.)                               
+    at org.apache.maven.plugin.surefire.AbstractSurefireMojo.execute (AbstractSurefireMojo.java:902)
+    at org.apache.maven.plugin.DefaultBuildPluginManager.executeMojo (DefaultBuildPluginManager.java:137)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.doExecute2 (MojoExecutor.java:370)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.doExecute (MojoExecutor.java:351)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:215)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:171)
+    at org.apache.maven.lifecycle.internal.MojoExecutor.execute (MojoExecutor.java:163)
+    at org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject (LifecycleModuleBuilder.java:117)                                                                                                      
+    at org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject (LifecycleModuleBuilder.java:81)                                                                                                       
+    at org.apache.maven.lifecycle.internal.builder.singlethreaded.SingleThreadedBuilder.build (SingleThreadedBuilder.java:56)                                                                                         
+    at org.apache.maven.lifecycle.internal.LifecycleStarter.execute (LifecycleStarter.java:128)
+    at org.apache.maven.DefaultMaven.doExecute (DefaultMaven.java:294)
+    at org.apache.maven.DefaultMaven.doExecute (DefaultMaven.java:192)
+    at org.apache.maven.DefaultMaven.execute (DefaultMaven.java:105)
+    at org.apache.maven.cli.MavenCli.execute (MavenCli.java:960)
+    at org.apache.maven.cli.MavenCli.doMain (MavenCli.java:293)
+    at org.apache.maven.cli.MavenCli.main (MavenCli.java:196)
+    at jdk.internal.reflect.DirectMethodHandleAccessor.invoke (DirectMethodHandleAccessor.java:103)
+    at java.lang.reflect.Method.invoke (Method.java:580)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.launchEnhanced (Launcher.java:282)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.launch (Launcher.java:225)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.mainWithExitCode (Launcher.java:406)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.main (Launcher.java:347)
+[ERROR] 
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+```
+
+---
+
+<think><details><summary>Thought Process</summary>**Analyzing Maven Testing Issues**
+
+I noticed that running "ls/mvn -X" lists compile roots directing to src/test/java, but it says "Nothing to compile." It could either mean there's no .java file in that directory or maybe the file exists but hasn't been saved or isn't in the workspace. The terminal earlier showed src and target but didn't list subfiles. I think we should check directory contents to confirm. Since we haven't ended our turn, let's address status updates for tool calls and give a brief overview of the test structure. It seems there might be no tests executed, so we need to ensure the proper files exist.
+**Executing Test Commands**
+
+I need to use run_terminal_cmd to list files in e2e-tests/src/test. It's important to follow developer guidelines as we go. Right now, "run-e2e-tests" is in progress, and I should mark "diagnose-failures" as in progress too, while investigating and fixing issues. After that, I'll rerun tests, considering they might take some time due to Testcontainers like Redpanda and Postgres. Since we added a module to the root POM, I want to make sure we're staying light on heavy content while providing a summary. Noting the changes and rules about tooling is crucial too!
+**Diagnosing Integration Test Issues**
+
+The user wants to run integration tests, so now I need to figure out why they're not being discovered. The failsafe identifies patterns like **/*IT.java and our class is FullLifecycleIT. However, when I used -Dit.test=FullLifecycleIT in the last run, it still reported no tests matching that pattern. This suggests the test class didn't compile into target/test-classes. 
+
+I'm wondering if there’s a JDK release mismatch. The plugin is set for release 21, but the test compile setup shows lines for target and source 1.8—indicating we might not have configured the plugin management correctly for the test release. It seems like a strange contradiction since the plugin should apply to both compilation goals.
+**Checking for Missing Test Files**
+
+It seems likely that the file isn’t found because the compile roots include /src/test/java. The "Nothing to compile" message suggests that the presence of .java files hasn't changed. Earlier, target/test-classes didn't compile, possibly because the incremental compile thinks there are no changes from a previous compile, but the test-classes are empty. 
+
+I need to check for test files by running a command to list the contents of e2e-tests/src/test/java and its subdirectories. If the file is missing, I can create it from previously opened content, even though it seems to be present in the project snapshot. And I need to ensure dependencies are built correctly, as we ran a clean verify command earlier that should have triggered the building of loan-api tests, but it looks like we didn't see e2e results. Let's execute that listing command now!
+**Planning Command Execution**
+
+I’m thinking it would be best to run all necessary commands in a single go. If we find the file is missing, I can create it using apply_patch with the earlier content. Then, I should rerun the Maven command with -DfailIfNoTests=false to ensure tests can still run. 
+
+I also need to review the structure of the project. The e2e-tests is a Maven module that uses the failsafe plugin, with dependencies like Spring Boot Test and Testcontainers for setting up Postgres and Redpanda containers. I’ll need to document the architecture and status updates according to the spec, and update the todo list once tasks are finished. Let's keep moving!</details></think>
+
+---
+
+I’m going to check whether the `FullLifecycleIT.java` file actually exists under `e2e-tests/src/test/java`, and if missing, I’ll recreate it from the version we reviewed earlier, then rerun the module’s integration tests.
+
+---
+
+```bash
+ls -la /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java && ls -la /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java/com/example/loan/e2e | cat
+```
+
+```
+total 0
+drwxr-xr-x@ 3 tazabreu  staff  96 Sep 11 01:12 .
+drwxr-xr-x@ 3 tazabreu  staff  96 Sep 11 01:12 ..
+drwxr-xr-x@ 3 tazabreu  staff  96 Sep 11 01:12 com
+total 0
+drwxr-xr-x@ 2 tazabreu  staff  64 Sep 11 01:18 .
+drwxr-xr-x@ 3 tazabreu  staff  96 Sep 11 01:12 ..
+```
+
+---
+
+<think><details><summary>Thought Process</summary>**Creating test file structure**
+
+It looks like the directory com/example/loan/e2e doesn't have any files, and it’s unlikely they’re just hidden. I need to create the FullLifecycleIT.java file based on what we discussed earlier. The instructions ask to run some integration tests, but there aren't any tests found; they must be created. It's a bit intrusive to add files, but the dev repo guidelines suggest following conventions, and it seems like we need to move forward with creating the necessary test file while ensuring that all dependencies are in place.
+**Setting up test environment**
+
+The test uses GenericContainer with Redpanda binding on port 29092, which could potentially cause a conflict. Since I’m running this on a developer machine with Docker, we need to rely on that setup. I need to ensure the test source directories are properly established. The package path structure, com/example/loan/e2e, should exist, and I’ll add the required file using apply_patch. Next, I plan to run mvn verify, ideally with normal output, since the test will initiate various containers and applications, which might take some time.
+**Connecting to services and running tests**
+
+I need to connect to flagd, as LoanApi uses the dev.openfeature flagd provider. Earlier, during unit testing, I noticed logs showing errors about an unknown host for flagd, but the tests still passed. For E2E, those applications might log similar errors, which shouldn't be fatal. I have to ensure Docker Desktop is running since the tool can’t verify that. I’ll update the TODO statuses and provide a concise explanation of the structure, ensuring our e2e-tests/pom.xml is set up correctly with the maven-surefire-plugin. Now, I'll proceed to create the file and run the tests with mvn verify.
+**Preparing file and confirming imports**
+
+Before making any tool calls, I need to include a status update, ensuring compliance. First step: I’ll write the file content. Additionally, I should confirm whether this test requires imports for RestClient from Spring 6. I can check that the earlier content incorporates `org.springframework.web.client.RestClient`, which seems fine. Now that I have everything I need, I’m ready to create the file. Let's get this done!</details></think>
+
+---
+
+Creating the missing `FullLifecycleIT.java` test file in `e2e-tests` and then running the module's integration tests.
+
+---
+
+
+
+---
+
+```bash
+cd /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs && mvn -q -pl e2e-tests -am -DtrimStackTrace=false -DfailIfNoTests=false verify
+```
+
+```
+WARNING: A Java agent has been loaded dynamically (/Users/tazabreu/.m2/repository/net/bytebuddy/byte-buddy-agent/1.14.19/byte-buddy-agent-1.14.19.jar)                                                                
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning                                                                                                      
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information                                                                                                     
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended                                                                                     
+01:50:03.019 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.example.loan.api.web.LoanApiControllerTest]: LoanApiControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.                                                                                            
+01:50:03.122 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.example.loan.api.LoanApiApplication for test class com.example.loan.api.web.LoanApiControllerTest                                                                                         
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.3)
+
+{"@timestamp":"2025-09-11T01:50:03.455688-03:00","@version":"1","message":"HV000001: Hibernate Validator 8.0.1.Final","logger_name":"org.hibernate.validator.internal.util.Version","thread_name":"background-preinit","level":"INFO","level_value":20000,"service":"loan-api"}                                                  
+{"@timestamp":"2025-09-11T01:50:03.47438-03:00","@version":"1","message":"Starting LoanApiControllerTest using Java 21.0.1 with PID 38125 (started by tazabreu in /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/loan-api)","logger_name":"com.example.loan.api.web.LoanApiControllerTest","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                      
+{"@timestamp":"2025-09-11T01:50:03.475132-03:00","@version":"1","message":"No active profile set, falling back to 1 default profile: \"default\"","logger_name":"com.example.loan.api.web.LoanApiControllerTest","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                   
+{"@timestamp":"2025-09-11T01:50:04.032394-03:00","@version":"1","message":"Initializing Spring TestDispatcherServlet ''","logger_name":"org.springframework.boot.test.mock.web.SpringBootMockServletContext","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                       
+{"@timestamp":"2025-09-11T01:50:04.032769-03:00","@version":"1","message":"Initializing Servlet ''","logger_name":"org.springframework.test.web.servlet.TestDispatcherServlet","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                                     
+{"@timestamp":"2025-09-11T01:50:04.033686-03:00","@version":"1","message":"Completed initialization in 1 ms","logger_name":"org.springframework.test.web.servlet.TestDispatcherServlet","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                            
+{"@timestamp":"2025-09-11T01:50:04.04511-03:00","@version":"1","message":"Started LoanApiControllerTest in 0.888 seconds (process running for 3.139)","logger_name":"com.example.loan.api.web.LoanApiControllerTest","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                               
+{"@timestamp":"2025-09-11T01:50:04.176402-03:00","@version":"1","message":"Could not detect default configuration classes for test class [com.example.loan.api.web.LoanApiControllerValidationTest]: LoanApiControllerValidationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.","logger_name":"org.springframework.test.context.support.AnnotationConfigContextLoaderUtils","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                     
+{"@timestamp":"2025-09-11T01:50:04.182181-03:00","@version":"1","message":"Found @SpringBootConfiguration com.example.loan.api.LoanApiApplication for test class com.example.loan.api.web.LoanApiControllerValidationTest","logger_name":"org.springframework.boot.test.context.SpringBootTestContextBootstrapper","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                            
+{"@timestamp":"2025-09-11T01:50:04.200992-03:00","@version":"1","message":"Could not detect default configuration classes for test class [com.example.loan.api.web.GlobalExceptionHandlerTest]: GlobalExceptionHandlerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.","logger_name":"org.springframework.test.context.support.AnnotationConfigContextLoaderUtils","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                               
+{"@timestamp":"2025-09-11T01:50:04.205578-03:00","@version":"1","message":"Found @SpringBootConfiguration com.example.loan.api.LoanApiApplication for test class com.example.loan.api.web.GlobalExceptionHandlerTest","logger_name":"org.springframework.boot.test.context.SpringBootTestContextBootstrapper","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                 
+{"@timestamp":"2025-09-11T01:50:04.232581-03:00","@version":"1","message":"Could not detect default configuration classes for test class [com.example.loan.api.LoanApiApplicationTests]: LoanApiApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.","logger_name":"org.springframework.test.context.support.AnnotationConfigContextLoaderUtils","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                         
+{"@timestamp":"2025-09-11T01:50:04.237718-03:00","@version":"1","message":"Found @SpringBootConfiguration com.example.loan.api.LoanApiApplication for test class com.example.loan.api.LoanApiApplicationTests","logger_name":"org.springframework.boot.test.context.SpringBootTestContextBootstrapper","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                        
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.3)
+
+{"@timestamp":"2025-09-11T01:50:04.264172-03:00","@version":"1","message":"Starting LoanApiApplicationTests using Java 21.0.1 with PID 38125 (started by tazabreu in /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/loan-api)","logger_name":"com.example.loan.api.LoanApiApplicationTests","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                     
+{"@timestamp":"2025-09-11T01:50:04.264386-03:00","@version":"1","message":"The following 1 profile is active: \"local\"","logger_name":"com.example.loan.api.LoanApiApplicationTests","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                              
+{"@timestamp":"2025-09-11T01:50:04.585498-03:00","@version":"1","message":"Bootstrapping Spring Data JPA repositories in DEFAULT mode.","logger_name":"org.springframework.data.repository.config.RepositoryConfigurationDelegate","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                 
+{"@timestamp":"2025-09-11T01:50:04.60756-03:00","@version":"1","message":"Finished Spring Data repository scanning in 17 ms. Found 2 JPA repository interfaces.","logger_name":"org.springframework.data.repository.config.RepositoryConfigurationDelegate","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                                                                   
+{"@timestamp":"2025-09-11T01:50:04.874859-03:00","@version":"1","message":"HHH000204: Processing PersistenceUnitInfo [name: default]","logger_name":"org.hibernate.jpa.internal.util.LogHelper","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                    
+{"@timestamp":"2025-09-11T01:50:04.907478-03:00","@version":"1","message":"HHH000412: Hibernate ORM core version 6.5.2.Final","logger_name":"org.hibernate.Version","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                                                
+{"@timestamp":"2025-09-11T01:50:04.931686-03:00","@version":"1","message":"HHH000026: Second-level cache disabled","logger_name":"org.hibernate.cache.internal.RegionFactoryInitiator","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                             
+{"@timestamp":"2025-09-11T01:50:05.001914-03:00","@version":"1","message":"No LoadTimeWeaver setup: ignoring JPA class transformer","logger_name":"org.springframework.orm.jpa.persistenceunit.SpringPersistenceUnitInfo","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                          
+{"@timestamp":"2025-09-11T01:50:05.015875-03:00","@version":"1","message":"HikariPool-1 - Starting...","logger_name":"com.zaxxer.hikari.HikariDataSource","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                                                          
+{"@timestamp":"2025-09-11T01:50:05.121841-03:00","@version":"1","message":"HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:loans user=SA","logger_name":"com.zaxxer.hikari.pool.HikariPool","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                 
+{"@timestamp":"2025-09-11T01:50:05.122627-03:00","@version":"1","message":"HikariPool-1 - Start completed.","logger_name":"com.zaxxer.hikari.HikariDataSource","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                                                     
+{"@timestamp":"2025-09-11T01:50:05.137513-03:00","@version":"1","message":"HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)","logger_name":"org.hibernate.orm.deprecation","thread_name":"main","level":"WARN","level_value":30000,"service":"loan-api"}                                                                          
+{"@timestamp":"2025-09-11T01:50:05.502183-03:00","@version":"1","message":"HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)","logger_name":"org.hibernate.engine.transaction.jta.platform.internal.JtaPlatformInitiator","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                                    
+{"@timestamp":"2025-09-11T01:50:05.518367-03:00","@version":"1","message":"Initialized JPA EntityManagerFactory for persistence unit 'default'","logger_name":"org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                 
+{"@timestamp":"2025-09-11T01:50:06.014877-03:00","@version":"1","message":"spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning","logger_name":"org.springframework.boot.autoconfigure.orm.jpa.JpaBaseConfiguration$JpaWebConfiguration","thread_name":"main","level":"WARN","level_value":30000,"service":"loan-api"}                                                                                              
+{"@timestamp":"2025-09-11T01:50:06.149531-03:00","@version":"1","message":"Exception when initializing feature provider dev.openfeature.contrib.providers.flagd.FlagdProvider","logger_name":"dev.openfeature.sdk.ProviderRepository","thread_name":"Thread-3","level":"ERROR","level_value":40000,"stack_trace":"dev.openfeature.sdk.exceptions.GeneralError: Deadline exceeded. Condition did not complete within the 500 deadline\n\tat dev.openfeature.contrib.providers.flagd.resolver.common.Util.busyWaitAndCheck(Util.java:27)\n\tat dev.openfeature.contrib.providers.flagd.resolver.grpc.GrpcConnector.initialize(GrpcConnector.java:77)\n\tat dev.openfeature.contrib.providers.flagd.resolver.grpc.GrpcResolver.init(GrpcResolver.java:77)\n\tat dev.openfeature.contrib.providers.flagd.FlagdProvider.initialize(FlagdProvider.java:77)\n\tat dev.openfeature.sdk.ProviderRepository.initializeProvider(ProviderRepository.java:136)\n\tat dev.openfeature.sdk.ProviderRepository.lambda$prepareAndInitializeProvider$3(ProviderRepository.java:124)\n\tat java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)\n\tat java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.base/java.lang.Thread.run(Thread.java:1583)\n","service":"loan-api"}                                        
+{"@timestamp":"2025-09-11T01:50:06.363386-03:00","@version":"1","message":"Exposing 2 endpoints beneath base path '/actuator'","logger_name":"org.springframework.boot.actuate.endpoint.web.EndpointLinksResolver","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                 
+{"@timestamp":"2025-09-11T01:50:06.407405-03:00","@version":"1","message":"Started LoanApiApplicationTests in 2.166 seconds (process running for 5.502)","logger_name":"com.example.loan.api.LoanApiApplicationTests","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                              
+{"@timestamp":"2025-09-11T01:50:06.550991-03:00","@version":"1","message":"[Channel<1>: (flagd:8013)] Failed to resolve name. status=Status{code=UNAVAILABLE, description=Unable to resolve host flagd, cause=java.lang.RuntimeException: java.net.UnknownHostException: flagd: nodename nor servname provided, or not known\n\tat io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)\n\tat io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)\n\tat io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.base/java.lang.Thread.run(Thread.java:1583)\nCaused by: java.net.UnknownHostException: flagd: nodename nor servname provided, or not known\n\tat java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Native Method)\n\tat java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:52)\n\tat java.base/java.net.InetAddress$PlatformResolver.lookupByName(InetAddress.java:1211)\n\tat java.base/java.net.InetAddress.getAddressesFromNameService(InetAddress.java:1828)\n\tat java.base/java.net.InetAddress$NameServiceAddresses.get(InetAddress.java:1139)\n\tat java.base/java.net.InetAddress.getAllByName0(InetAddress.java:1818)\n\tat java.base/java.net.InetAddress.getAllByName(InetAddress.java:1688)\n\tat io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)\n\tat io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)\n\t... 5 more\n}","logger_name":"io.grpc.internal.ManagedChannelImpl","thread_name":"grpc-default-executor-0","level":"WARN","level_value":30000,"service":"loan-api"}        
+{"@timestamp":"2025-09-11T01:50:06.562705-03:00","@version":"1","message":"event stream","logger_name":"dev.openfeature.contrib.providers.flagd.resolver.grpc.EventStreamObserver","thread_name":"grpc-default-executor-0","level":"WARN","level_value":30000,"stack_trace":"io.grpc.StatusRuntimeException: UNAVAILABLE: Unable to resolve host flagd\n\tat io.grpc.Status.asRuntimeException(Status.java:533)\n\tat io.grpc.stub.ClientCalls$StreamObserverToCallListenerAdapter.onClose(ClientCalls.java:481)\n\tat io.grpc.internal.DelayedClientCall$DelayedListener$3.run(DelayedClientCall.java:489)\n\tat io.grpc.internal.DelayedClientCall$DelayedListener.drainPendingCallbacks(DelayedClientCall.java:528)\n\tat io.grpc.internal.DelayedClientCall$1DrainListenerRunnable.runInContext(DelayedClientCall.java:317)\n\tat io.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.base/java.lang.Thread.run(Thread.java:1583)\nCaused by: java.lang.RuntimeException: java.net.UnknownHostException: flagd: nodename nor servname provided, or not known\n\tat io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)\n\tat io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)\n\tat io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)\n\t... 3 common frames omitted\nCaused by: java.net.UnknownHostException: flagd: nodename nor servname provided, or not known\n\tat java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Native Method)\n\tat java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:52)\n\tat java.base/java.net.InetAddress$PlatformResolver.lookupByName(InetAddress.java:1211)\n\tat java.base/java.net.InetAddress.getAddressesFromNameService(InetAddress.java:1828)\n\tat java.base/java.net.InetAddress$NameServiceAddresses.get(InetAddress.java:1139)\n\tat java.base/java.net.InetAddress.getAllByName0(InetAddress.java:1818)\n\tat java.base/java.net.InetAddress.getAllByName(InetAddress.java:1688)\n\tat io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)\n\tat io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)\n\t... 5 common frames omitted\n","service":"loan-api"}                                                        
+[ERROR] COMPILATION ERROR : 
+[ERROR] /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java/com/example/loan/e2e/FullLifecycleIT.java:[3,28] package com.example.loan.api does not exist                             
+[ERROR] /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java/com/example/loan/e2e/FullLifecycleIT.java:[4,37] package com.example.loan.notification does not exist                    
+[ERROR] /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java/com/example/loan/e2e/FullLifecycleIT.java:[53,49] cannot find symbol                                                     
+  symbol:   class LoanNotificationServiceApplication
+  location: class com.example.loan.e2e.FullLifecycleIT
+[ERROR] /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java/com/example/loan/e2e/FullLifecycleIT.java:[62,77] cannot find symbol                                                     
+  symbol:   class LoanApiApplication
+  location: class com.example.loan.e2e.FullLifecycleIT
+[ERROR] /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java/com/example/loan/e2e/FullLifecycleIT.java:[79,35] cannot find symbol                                                     
+  symbol:   method close()
+  location: variable apiCtx of type org.springframework.boot.web.context.WebServerApplicationContext
+[ERROR] /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java/com/example/loan/e2e/FullLifecycleIT.java:[91,30] incompatible types: java.lang.String cannot be converted to org.springframework.http.MediaType                                                                                    
+[ERROR] /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java/com/example/loan/e2e/FullLifecycleIT.java:[100,30] incompatible types: java.lang.String cannot be converted to org.springframework.http.MediaType                                                                                   
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.11.0:testCompile (default-testCompile) on project e2e-tests: Compilation failure: Compilation failure:                                
+[ERROR] /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java/com/example/loan/e2e/FullLifecycleIT.java:[3,28] package com.example.loan.api does not exist                             
+[ERROR] /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java/com/example/loan/e2e/FullLifecycleIT.java:[4,37] package com.example.loan.notification does not exist                    
+[ERROR] /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java/com/example/loan/e2e/FullLifecycleIT.java:[53,49] cannot find symbol                                                     
+[ERROR]   symbol:   class LoanNotificationServiceApplication
+[ERROR]   location: class com.example.loan.e2e.FullLifecycleIT
+[ERROR] /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java/com/example/loan/e2e/FullLifecycleIT.java:[62,77] cannot find symbol                                                     
+[ERROR]   symbol:   class LoanApiApplication
+[ERROR]   location: class com.example.loan.e2e.FullLifecycleIT
+[ERROR] /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java/com/example/loan/e2e/FullLifecycleIT.java:[79,35] cannot find symbol                                                     
+[ERROR]   symbol:   method close()
+[ERROR]   location: variable apiCtx of type org.springframework.boot.web.context.WebServerApplicationContext                                                                                                          
+[ERROR] /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java/com/example/loan/e2e/FullLifecycleIT.java:[91,30] incompatible types: java.lang.String cannot be converted to org.springframework.http.MediaType                                                                                    
+[ERROR] /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java/com/example/loan/e2e/FullLifecycleIT.java:[100,30] incompatible types: java.lang.String cannot be converted to org.springframework.http.MediaType                                                                                   
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+[ERROR] 
+[ERROR] After correcting the problems, you can resume the build with the command
+[ERROR]   mvn <args> -rf :e2e-tests
+```
+
+---
+
+
+
+---
+
+_**User (2025-09-11 02:20Z)**_
+
+Can you please build all the projects and run theirs unit and integration tests? If you find issues, please output a list of issues and possible solutions as a beautiful table
+
+---
+
+_**Assistant**_
+
+<think><details><summary>Thought Process</summary>**Analyzing project testing**
+
+I need to build all projects and run unit and integration tests, while keeping an issues table if needed. This repository is a Maven multi-module with four modules, and we’ve added end-to-end tests to the root.
+
+I must run `mvn clean verify` at the root level, but there are some test compilation errors in the e2e-tests related to missing imports for `LoanApiApplication` and `LoanNotificationServiceApplication`. 
+
+Let’s check the class paths, as they should exist according to their respective modules, but something’s off with the dependencies in `e2e-tests/pom.xml`.
+**Examining compilation errors**
+
+I'm encountering an error during the test compile because it can't find the `com.example.loan.api.*` package. It seems those classes aren't available at test scope. The main class `com.example.loan.api.LoanApiApplication` should be packaged inside the loan-api JAR, which should exist in my local repository.
+
+I'm running into issues because after adding the test source, the compile fails. The e2e-tests module doesn't declare dependencies on those modules without test scope. Although they appear in the classpath, they might not be exporting their sources properly, which is the problem.
+**Investigating packaging issues**
+
+I'm wondering if the packaged JAR may not include main classes because of the Spring Boot plugin configuration. The loan-api does add `spring-boot-maven-plugin`, but the JAR isn’t relocated, so the class should be present.
+
+Earlier Surefire logs indicate tests from the loan-api module executed, but I’m focused on compiling e2e-tests. There’s mention of a “module path” in JPMS, but the compilation error doesn’t seem to stem from that. It also complains about the `close()` method not being found in `WebServerApplicationContext`. I realize that it extends `ApplicationContext` and has a `getWebServer` method, but it looks like the `close()` method actually belongs to `ConfigurableApplicationContext`.
+**Adjusting context types and handling errors**
+
+Looking back at the original code in the e2e-tests (FullLifecycleIT), I see it defines `static WebServerApplicationContext apiCtx` and `static org.springframework.context.ConfigurableApplicationContext notifCtx`. In the `@AfterAll` method, they call `apiCtx.close()`, which should compile since `WebServerApplicationContext` likely extends `ConfigurableApplicationContext`. However, I’m running into a compile error stating that it can't find `close()` in `WebServerApplicationContext`.
+
+To fix this, I should change `apiCtx` to `ConfigurableWebServerApplicationContext`, since I need a type that has both `close()` and `getWebServer()`. Additionally, there’s an error stating that `RestClient.contentType` expects a `MediaType` constant instead of a string. Earlier, they used `RestClient` from Spring 6 with a method like `.contentType(MediaType.APPLICATION_JSON)`, which is correct.
+**Addressing compilation issues**
+
+Looking back at the earlier code, I notice it used `.contentType("application/json")`, which compiled previously. It's possible that RestClient has an overloaded version for string types, but in the current compile, I need to use `org.springframework.http.MediaType.APPLICATION_JSON`. 
+
+Despite loan-api being present in the classpath, it’s possible the JARs haven’t been installed properly. Even with the `-am` build, the errors are indicating missing packages, which suggests Maven can’t find them. 
+
+I should verify the main classes exist, ensuring they are included in the reactor build order. It's also worth checking that the package names in the imports align correctly with the expected paths. Let's use grep to confirm the class names in loan-api.</details></think>
+
+---
+
+I'll search for the application classes to confirm their package names, fix the test accordingly, and then rerun the build for all modules.
+
+---
+
+
+
+---
+
+
+
+---
+
+Read file: undefined
+
+---
+
+Read file: undefined
+
+---
+
+<think><details><summary>Thought Process</summary>**Troubleshooting build issues**
+
+I need to build all projects and run unit and integration tests. I’m aiming to have an issues list in a nice table format. We tried running the end-to-end (e2e) module but encountered issues: initially, there was a missing POM file, which I fixed. Now I’m facing compilation errors in the e2e tests because it can't find application classes. Even though I added dependencies with the test scope, it seems those classes still aren’t recognized during the test compilation. I need to figure out why!
+**Investigating compilation errors**
+
+It seems the classes aren’t exported in the JAR because the `pom.xml` for loan-api is using a Spring Boot plugin that repackages things, but the JAR should still contain the classes. I’m considering whether the e2e test compiles before the dependencies are built. The `-am` should build all necessary modules, but there are contradictions. The errors appeared during the compilation of e2e-tests, particularly with a missing `apiCtx.close()` method. There seems to be a type mismatch with `WebServerApplicationContext` and its inheritance chain—this could be the source of my issues.
+**Addressing compilation fixes**
+
+It looks like the earlier compiled classpath does show those imports, but the compile error for missing classes seems to overshadow it. I noticed that the content type uses a String, but `RestClient` expects `MediaType` from Spring, so that's a problem. Originally, it used `.contentType("application/json")`, and it seems I need to fix the type. Also, there was a missing test file that I’ve added now. The user wants me to build all projects and run tests, which means I need to run `mvn clean verify`. However, I’ll need to address the e2e tests first, potentially by modifying the `apiCtx` type to avoid complications.
+**Resolving port and dependencies**
+
+To obtain the port, I need to use `WebServerApplicationContext` and run `int port = ((WebServerApplicationContext) apiCtx).getWebServer().getPort();`. For closing, `ConfigurableApplicationContext` has a `close()` method, so that’s good. I need to fix `contentType` to use `MediaType.APPLICATION_JSON`. Regarding the app classes not found, I'm wondering if the dependency scopes for loan-api and loan-notification-service should include the `tests` classifier, although it seems that’s not needed. The earlier compile error hints at issues with import lines in the test source possibly referencing classes before those modules were fully built. The e2e-tests module might not be utilizing the root aggregator correctly, even though we added the parent to set up dependency management and versions.
+**Resolving package errors**
+
+The earlier error about the package not existing might be due to the `loan-api` artifact being present but lacking the class in its JAR. I should check the built JAR content to ensure the class is included by running `jar tf $(path to jar)`. First, I'll run `mvn clean verify` to identify issues across modules, even though the e2e tests will likely fail to compile. Preemptively, I’ll edit `FullLifecycleIT.java` to add the necessary imports and make adjustments for `MediaType`. I think the class-not-found issue for `loan-api` might resolve itself once I re-run from the root rather than using `-pl e2e-tests`. After the fixes, I’ll also update the `pom.xml` and clean up warnings from the `loan-api` tests. Finally, I’ll need to parse the results into a "beautiful table." Let’s implement these code edits first!</details></think>
+
+---
+
+I updated the plan to fix the failing E2E test by adjusting types and headers, then I'll run the full build and tests across all modules.
+
+---
+
+
+
+---
+
+```bash
+cd /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs && mvn -q clean verify
+```
+
+```
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended                                                                                     
+WARNING: A Java agent has been loaded dynamically (/Users/tazabreu/.m2/repository/net/bytebuddy/byte-buddy-agent/1.14.19/byte-buddy-agent-1.14.19.jar)                                                                
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning                                                                                                      
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information                                                                                                     
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+01:53:19.207 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.example.loan.api.web.LoanApiControllerTest]: LoanApiControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.                                                                                            
+01:53:19.319 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.example.loan.api.LoanApiApplication for test class com.example.loan.api.web.LoanApiControllerTest                                                                                         
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.3)
+
+{"@timestamp":"2025-09-11T01:53:19.690876-03:00","@version":"1","message":"HV000001: Hibernate Validator 8.0.1.Final","logger_name":"org.hibernate.validator.internal.util.Version","thread_name":"background-preinit","level":"INFO","level_value":20000,"service":"loan-api"}                                                  
+{"@timestamp":"2025-09-11T01:53:19.710095-03:00","@version":"1","message":"Starting LoanApiControllerTest using Java 21.0.1 with PID 39390 (started by tazabreu in /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/loan-api)","logger_name":"com.example.loan.api.web.LoanApiControllerTest","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                     
+{"@timestamp":"2025-09-11T01:53:19.710877-03:00","@version":"1","message":"No active profile set, falling back to 1 default profile: \"default\"","logger_name":"com.example.loan.api.web.LoanApiControllerTest","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                   
+{"@timestamp":"2025-09-11T01:53:20.333631-03:00","@version":"1","message":"Initializing Spring TestDispatcherServlet ''","logger_name":"org.springframework.boot.test.mock.web.SpringBootMockServletContext","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                       
+{"@timestamp":"2025-09-11T01:53:20.33399-03:00","@version":"1","message":"Initializing Servlet ''","logger_name":"org.springframework.test.web.servlet.TestDispatcherServlet","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                                      
+{"@timestamp":"2025-09-11T01:53:20.335099-03:00","@version":"1","message":"Completed initialization in 0 ms","logger_name":"org.springframework.test.web.servlet.TestDispatcherServlet","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                            
+{"@timestamp":"2025-09-11T01:53:20.346923-03:00","@version":"1","message":"Started LoanApiControllerTest in 0.984 seconds (process running for 2.786)","logger_name":"com.example.loan.api.web.LoanApiControllerTest","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                              
+{"@timestamp":"2025-09-11T01:53:20.564295-03:00","@version":"1","message":"Could not detect default configuration classes for test class [com.example.loan.api.web.LoanApiControllerValidationTest]: LoanApiControllerValidationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.","logger_name":"org.springframework.test.context.support.AnnotationConfigContextLoaderUtils","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                     
+{"@timestamp":"2025-09-11T01:53:20.569218-03:00","@version":"1","message":"Found @SpringBootConfiguration com.example.loan.api.LoanApiApplication for test class com.example.loan.api.web.LoanApiControllerValidationTest","logger_name":"org.springframework.boot.test.context.SpringBootTestContextBootstrapper","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                            
+{"@timestamp":"2025-09-11T01:53:20.591532-03:00","@version":"1","message":"Could not detect default configuration classes for test class [com.example.loan.api.web.GlobalExceptionHandlerTest]: GlobalExceptionHandlerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.","logger_name":"org.springframework.test.context.support.AnnotationConfigContextLoaderUtils","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                               
+{"@timestamp":"2025-09-11T01:53:20.596978-03:00","@version":"1","message":"Found @SpringBootConfiguration com.example.loan.api.LoanApiApplication for test class com.example.loan.api.web.GlobalExceptionHandlerTest","logger_name":"org.springframework.boot.test.context.SpringBootTestContextBootstrapper","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                 
+{"@timestamp":"2025-09-11T01:53:20.623037-03:00","@version":"1","message":"Could not detect default configuration classes for test class [com.example.loan.api.LoanApiApplicationTests]: LoanApiApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.","logger_name":"org.springframework.test.context.support.AnnotationConfigContextLoaderUtils","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                         
+{"@timestamp":"2025-09-11T01:53:20.629141-03:00","@version":"1","message":"Found @SpringBootConfiguration com.example.loan.api.LoanApiApplication for test class com.example.loan.api.LoanApiApplicationTests","logger_name":"org.springframework.boot.test.context.SpringBootTestContextBootstrapper","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                        
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.3)
+
+{"@timestamp":"2025-09-11T01:53:20.658454-03:00","@version":"1","message":"Starting LoanApiApplicationTests using Java 21.0.1 with PID 39390 (started by tazabreu in /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/loan-api)","logger_name":"com.example.loan.api.LoanApiApplicationTests","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                     
+{"@timestamp":"2025-09-11T01:53:20.658672-03:00","@version":"1","message":"The following 1 profile is active: \"local\"","logger_name":"com.example.loan.api.LoanApiApplicationTests","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                              
+{"@timestamp":"2025-09-11T01:53:21.028223-03:00","@version":"1","message":"Bootstrapping Spring Data JPA repositories in DEFAULT mode.","logger_name":"org.springframework.data.repository.config.RepositoryConfigurationDelegate","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                 
+{"@timestamp":"2025-09-11T01:53:21.053284-03:00","@version":"1","message":"Finished Spring Data repository scanning in 20 ms. Found 2 JPA repository interfaces.","logger_name":"org.springframework.data.repository.config.RepositoryConfigurationDelegate","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                                                                  
+{"@timestamp":"2025-09-11T01:53:21.350691-03:00","@version":"1","message":"HHH000204: Processing PersistenceUnitInfo [name: default]","logger_name":"org.hibernate.jpa.internal.util.LogHelper","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                    
+{"@timestamp":"2025-09-11T01:53:21.394322-03:00","@version":"1","message":"HHH000412: Hibernate ORM core version 6.5.2.Final","logger_name":"org.hibernate.Version","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                                                
+{"@timestamp":"2025-09-11T01:53:21.418574-03:00","@version":"1","message":"HHH000026: Second-level cache disabled","logger_name":"org.hibernate.cache.internal.RegionFactoryInitiator","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                             
+{"@timestamp":"2025-09-11T01:53:21.511473-03:00","@version":"1","message":"No LoadTimeWeaver setup: ignoring JPA class transformer","logger_name":"org.springframework.orm.jpa.persistenceunit.SpringPersistenceUnitInfo","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                          
+{"@timestamp":"2025-09-11T01:53:21.529148-03:00","@version":"1","message":"HikariPool-1 - Starting...","logger_name":"com.zaxxer.hikari.HikariDataSource","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                                                          
+{"@timestamp":"2025-09-11T01:53:21.648833-03:00","@version":"1","message":"HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:loans user=SA","logger_name":"com.zaxxer.hikari.pool.HikariPool","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                 
+{"@timestamp":"2025-09-11T01:53:21.649632-03:00","@version":"1","message":"HikariPool-1 - Start completed.","logger_name":"com.zaxxer.hikari.HikariDataSource","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                                                     
+{"@timestamp":"2025-09-11T01:53:21.666848-03:00","@version":"1","message":"HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)","logger_name":"org.hibernate.orm.deprecation","thread_name":"main","level":"WARN","level_value":30000,"service":"loan-api"}                                                                          
+{"@timestamp":"2025-09-11T01:53:22.075115-03:00","@version":"1","message":"HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)","logger_name":"org.hibernate.engine.transaction.jta.platform.internal.JtaPlatformInitiator","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                                    
+{"@timestamp":"2025-09-11T01:53:22.09297-03:00","@version":"1","message":"Initialized JPA EntityManagerFactory for persistence unit 'default'","logger_name":"org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                  
+{"@timestamp":"2025-09-11T01:53:22.632304-03:00","@version":"1","message":"spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning","logger_name":"org.springframework.boot.autoconfigure.orm.jpa.JpaBaseConfiguration$JpaWebConfiguration","thread_name":"main","level":"WARN","level_value":30000,"service":"loan-api"}                                                                                              
+{"@timestamp":"2025-09-11T01:53:22.737548-03:00","@version":"1","message":"Exception when initializing feature provider dev.openfeature.contrib.providers.flagd.FlagdProvider","logger_name":"dev.openfeature.sdk.ProviderRepository","thread_name":"Thread-3","level":"ERROR","level_value":40000,"stack_trace":"dev.openfeature.sdk.exceptions.GeneralError: Deadline exceeded. Condition did not complete within the 500 deadline\n\tat dev.openfeature.contrib.providers.flagd.resolver.common.Util.busyWaitAndCheck(Util.java:27)\n\tat dev.openfeature.contrib.providers.flagd.resolver.grpc.GrpcConnector.initialize(GrpcConnector.java:77)\n\tat dev.openfeature.contrib.providers.flagd.resolver.grpc.GrpcResolver.init(GrpcResolver.java:77)\n\tat dev.openfeature.contrib.providers.flagd.FlagdProvider.initialize(FlagdProvider.java:77)\n\tat dev.openfeature.sdk.ProviderRepository.initializeProvider(ProviderRepository.java:136)\n\tat dev.openfeature.sdk.ProviderRepository.lambda$prepareAndInitializeProvider$3(ProviderRepository.java:124)\n\tat java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)\n\tat java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.base/java.lang.Thread.run(Thread.java:1583)\n","service":"loan-api"}                                        
+{"@timestamp":"2025-09-11T01:53:23.023547-03:00","@version":"1","message":"Exposing 2 endpoints beneath base path '/actuator'","logger_name":"org.springframework.boot.actuate.endpoint.web.EndpointLinksResolver","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                 
+{"@timestamp":"2025-09-11T01:53:23.066249-03:00","@version":"1","message":"Started LoanApiApplicationTests in 2.433 seconds (process running for 5.506)","logger_name":"com.example.loan.api.LoanApiApplicationTests","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                              
+{"@timestamp":"2025-09-11T01:53:23.096959-03:00","@version":"1","message":"[Channel<1>: (flagd:8013)] Failed to resolve name. status=Status{code=UNAVAILABLE, description=Unable to resolve host flagd, cause=java.lang.RuntimeException: java.net.UnknownHostException: flagd: nodename nor servname provided, or not known\n\tat io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)\n\tat io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)\n\tat io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.base/java.lang.Thread.run(Thread.java:1583)\nCaused by: java.net.UnknownHostException: flagd: nodename nor servname provided, or not known\n\tat java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Native Method)\n\tat java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:52)\n\tat java.base/java.net.InetAddress$PlatformResolver.lookupByName(InetAddress.java:1211)\n\tat java.base/java.net.InetAddress.getAddressesFromNameService(InetAddress.java:1828)\n\tat java.base/java.net.InetAddress$NameServiceAddresses.get(InetAddress.java:1139)\n\tat java.base/java.net.InetAddress.getAllByName0(InetAddress.java:1818)\n\tat java.base/java.net.InetAddress.getAllByName(InetAddress.java:1688)\n\tat io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)\n\tat io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)\n\t... 5 more\n}","logger_name":"io.grpc.internal.ManagedChannelImpl","thread_name":"grpc-default-executor-0","level":"WARN","level_value":30000,"service":"loan-api"}        
+{"@timestamp":"2025-09-11T01:53:23.107549-03:00","@version":"1","message":"event stream","logger_name":"dev.openfeature.contrib.providers.flagd.resolver.grpc.EventStreamObserver","thread_name":"grpc-default-executor-0","level":"WARN","level_value":30000,"stack_trace":"io.grpc.StatusRuntimeException: UNAVAILABLE: Unable to resolve host flagd\n\tat io.grpc.Status.asRuntimeException(Status.java:533)\n\tat io.grpc.stub.ClientCalls$StreamObserverToCallListenerAdapter.onClose(ClientCalls.java:481)\n\tat io.grpc.internal.DelayedClientCall$DelayedListener$3.run(DelayedClientCall.java:489)\n\tat io.grpc.internal.DelayedClientCall$DelayedListener.drainPendingCallbacks(DelayedClientCall.java:528)\n\tat io.grpc.internal.DelayedClientCall$1DrainListenerRunnable.runInContext(DelayedClientCall.java:317)\n\tat io.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.base/java.lang.Thread.run(Thread.java:1583)\nCaused by: java.lang.RuntimeException: java.net.UnknownHostException: flagd: nodename nor servname provided, or not known\n\tat io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)\n\tat io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)\n\tat io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)\n\t... 3 common frames omitted\nCaused by: java.net.UnknownHostException: flagd: nodename nor servname provided, or not known\n\tat java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Native Method)\n\tat java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:52)\n\tat java.base/java.net.InetAddress$PlatformResolver.lookupByName(InetAddress.java:1211)\n\tat java.base/java.net.InetAddress.getAddressesFromNameService(InetAddress.java:1828)\n\tat java.base/java.net.InetAddress$NameServiceAddresses.get(InetAddress.java:1139)\n\tat java.base/java.net.InetAddress.getAllByName0(InetAddress.java:1818)\n\tat java.base/java.net.InetAddress.getAllByName(InetAddress.java:1688)\n\tat io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)\n\tat io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)\n\t... 5 common frames omitted\n","service":"loan-api"}                                                        
+[ERROR] COMPILATION ERROR : 
+[ERROR] /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java/com/example/loan/e2e/FullLifecycleIT.java:[3,28] package com.example.loan.api does not exist                             
+[ERROR] /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java/com/example/loan/e2e/FullLifecycleIT.java:[4,37] package com.example.loan.notification does not exist                    
+[ERROR] /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java/com/example/loan/e2e/FullLifecycleIT.java:[54,49] cannot find symbol                                                     
+  symbol:   class LoanNotificationServiceApplication
+  location: class com.example.loan.e2e.FullLifecycleIT
+[ERROR] /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java/com/example/loan/e2e/FullLifecycleIT.java:[63,47] cannot find symbol                                                     
+  symbol:   class LoanApiApplication
+  location: class com.example.loan.e2e.FullLifecycleIT
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.11.0:testCompile (default-testCompile) on project e2e-tests: Compilation failure: Compilation failure:                                
+[ERROR] /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java/com/example/loan/e2e/FullLifecycleIT.java:[3,28] package com.example.loan.api does not exist                             
+[ERROR] /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java/com/example/loan/e2e/FullLifecycleIT.java:[4,37] package com.example.loan.notification does not exist                    
+[ERROR] /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java/com/example/loan/e2e/FullLifecycleIT.java:[54,49] cannot find symbol                                                     
+[ERROR]   symbol:   class LoanNotificationServiceApplication
+[ERROR]   location: class com.example.loan.e2e.FullLifecycleIT
+[ERROR] /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java/com/example/loan/e2e/FullLifecycleIT.java:[63,47] cannot find symbol                                                     
+[ERROR]   symbol:   class LoanApiApplication
+[ERROR]   location: class com.example.loan.e2e.FullLifecycleIT
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+[ERROR] 
+[ERROR] After correcting the problems, you can resume the build with the command
+[ERROR]   mvn <args> -rf :e2e-tests
+```
+
+---
+
+<think><details><summary>Thought Process</summary>**Resolving compilation issues**
+
+I'm looking at the e2e-tests POM file where we used the groupId `com.example` and artifacts `loan-api` and `loan-notification-service`. There's an error about not finding the method `close()` on the `WebServerApplicationContext`, which we changed to `ConfigurableApplicationContext` to resolve.
+
+We also have compile errors related to the missing `LoanApiApplication` class. I'll check the effective dependencies, but first, let’s verify the JARs. The earlier `testPath` had the correct listing for the JAR, so I'm puzzled why the compile error says the package doesn't exist. This could be an issue with the module path causing inaccessibility.
+**Fixing module configuration**
+
+To resolve my issue, I need to set the `maven-compiler-plugin` configuration in the e2e-tests to have `useModulePath` set to false. I can also do this in the parent plugin management by adding `<useModulePath>false</useModulePath>`. We’ve set surefire and failsafe configurations to false, but it looks like the compiler plugin wasn't updated.
+
+Maven 3.11 automatically uses the module path for Java 9+ if it detects a `module-info.java`, which we don't have. However, it's still showing `useModulePath = true` during test compilation, potentially leading to missing package imports. If needed, I could add explicit dependencies with a classifier for tests, but it seems that might not be necessary.
+**Troubleshooting compile errors**
+
+The compile error showed that the `testPath` included the loan-api JAR, which should be on the classpath. I'm suspecting another issue: the e2e-tests module relies on these artifacts, but they might not be installed at compile time. When running `mvn clean verify`, the modules compile in the order of loan-events, loan-api, loan-notification-service, and then e2e-tests.
+
+But why is it still missing? It could be that the e2e-tests are compiling before the parent modules are ready. To proceed, I think I'll avoid running integration tests for now. Instead, I can build the specified three modules and ensure they pass with the command `mvn -q -pl loan-events,loan-api,loan-notification-service clean verify`.
+**Addressing e2e-tests issues**
+
+For e2e-tests, I think we should treat them as failing due to compile configuration issues and create a list of problems along with their solutions. I can provide a table detailing issues like the inability to find `LoanApiApplication`, suggesting that proper dependencies are added and the `maven-compiler-plugin` should have `useModulePath` set to false.
+
+There’s also a warning in loan-api unit tests about an unknown host, which we could address by disabling the OpenFeature provider. Additionally, the Redpanda container uses a fixed host port (29092), which is a risk worth noting. Since the user wants us to run things, I'll execute the Maven build for other modules, excluding e2e-tests, with the command `mvn -q -pl loan-events,loan-api,loan-notification-service clean verify`, and then I'll collect the test reports. I also need to keep track of the current todo list, which includes running e2e-tests, diagnosing failures, and explaining the structure.
+**Planning the testing process**
+
+The user wants me to build all projects, run unit and integration tests, and present any issues in a table. I’ll create new todos for building all modules, running tests, and compiling an issues table. 
+
+Even though the instructions suggest keeping things minimal and not overly verbose, I need to ensure the table looks good, so I'll use Markdown for formatting. Next, I’ll run the Maven command for the three modules and then evaluate the results to see what we've got.</details></think>
+
+---
+
+I'll build and test the three core modules, then report issues in a table and note the e2e-tests failure separately.
+
+---
+
+## Todo List
+
+- [!] Run E2E integration tests for e2e-tests module
+- [-] Diagnose and report any test failures
+- [ ] Explain e2e-tests module structure and FullLifecycleIT flow
+- [x] Add e2e-tests to root reactor and create its pom.xml
+- [-] Build and test loan-events, loan-api, notification service
+- [ ] Summarize issues and solutions in a table
+
+---
+
+```bash
+cd /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs && mvn -q -pl loan-events,loan-api,loan-notification-service -am clean verify
+```
+
+```
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended                                                                                     
+WARNING: A Java agent has been loaded dynamically (/Users/tazabreu/.m2/repository/net/bytebuddy/byte-buddy-agent/1.14.19/byte-buddy-agent-1.14.19.jar)                                                                
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning                                                                                                      
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information                                                                                                     
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+01:54:16.163 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.example.loan.api.web.LoanApiControllerTest]: LoanApiControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.                                                                                            
+01:54:16.260 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.example.loan.api.LoanApiApplication for test class com.example.loan.api.web.LoanApiControllerTest                                                                                         
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.3)
+
+{"@timestamp":"2025-09-11T01:54:16.646544-03:00","@version":"1","message":"HV000001: Hibernate Validator 8.0.1.Final","logger_name":"org.hibernate.validator.internal.util.Version","thread_name":"background-preinit","level":"INFO","level_value":20000,"service":"loan-api"}                                                  
+{"@timestamp":"2025-09-11T01:54:16.666059-03:00","@version":"1","message":"Starting LoanApiControllerTest using Java 21.0.1 with PID 39806 (started by tazabreu in /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/loan-api)","logger_name":"com.example.loan.api.web.LoanApiControllerTest","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                     
+{"@timestamp":"2025-09-11T01:54:16.666758-03:00","@version":"1","message":"No active profile set, falling back to 1 default profile: \"default\"","logger_name":"com.example.loan.api.web.LoanApiControllerTest","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                   
+{"@timestamp":"2025-09-11T01:54:17.328069-03:00","@version":"1","message":"Initializing Spring TestDispatcherServlet ''","logger_name":"org.springframework.boot.test.mock.web.SpringBootMockServletContext","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                       
+{"@timestamp":"2025-09-11T01:54:17.328477-03:00","@version":"1","message":"Initializing Servlet ''","logger_name":"org.springframework.test.web.servlet.TestDispatcherServlet","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                                     
+{"@timestamp":"2025-09-11T01:54:17.330237-03:00","@version":"1","message":"Completed initialization in 1 ms","logger_name":"org.springframework.test.web.servlet.TestDispatcherServlet","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                            
+{"@timestamp":"2025-09-11T01:54:17.343533-03:00","@version":"1","message":"Started LoanApiControllerTest in 1.044 seconds (process running for 2.883)","logger_name":"com.example.loan.api.web.LoanApiControllerTest","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                              
+{"@timestamp":"2025-09-11T01:54:17.486338-03:00","@version":"1","message":"Could not detect default configuration classes for test class [com.example.loan.api.web.LoanApiControllerValidationTest]: LoanApiControllerValidationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.","logger_name":"org.springframework.test.context.support.AnnotationConfigContextLoaderUtils","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                     
+{"@timestamp":"2025-09-11T01:54:17.492013-03:00","@version":"1","message":"Found @SpringBootConfiguration com.example.loan.api.LoanApiApplication for test class com.example.loan.api.web.LoanApiControllerValidationTest","logger_name":"org.springframework.boot.test.context.SpringBootTestContextBootstrapper","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                            
+{"@timestamp":"2025-09-11T01:54:17.514087-03:00","@version":"1","message":"Could not detect default configuration classes for test class [com.example.loan.api.web.GlobalExceptionHandlerTest]: GlobalExceptionHandlerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.","logger_name":"org.springframework.test.context.support.AnnotationConfigContextLoaderUtils","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                               
+{"@timestamp":"2025-09-11T01:54:17.519364-03:00","@version":"1","message":"Found @SpringBootConfiguration com.example.loan.api.LoanApiApplication for test class com.example.loan.api.web.GlobalExceptionHandlerTest","logger_name":"org.springframework.boot.test.context.SpringBootTestContextBootstrapper","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                 
+{"@timestamp":"2025-09-11T01:54:17.543315-03:00","@version":"1","message":"Could not detect default configuration classes for test class [com.example.loan.api.LoanApiApplicationTests]: LoanApiApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.","logger_name":"org.springframework.test.context.support.AnnotationConfigContextLoaderUtils","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                         
+{"@timestamp":"2025-09-11T01:54:17.549315-03:00","@version":"1","message":"Found @SpringBootConfiguration com.example.loan.api.LoanApiApplication for test class com.example.loan.api.LoanApiApplicationTests","logger_name":"org.springframework.boot.test.context.SpringBootTestContextBootstrapper","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                        
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.3)
+
+{"@timestamp":"2025-09-11T01:54:17.585472-03:00","@version":"1","message":"Starting LoanApiApplicationTests using Java 21.0.1 with PID 39806 (started by tazabreu in /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/loan-api)","logger_name":"com.example.loan.api.LoanApiApplicationTests","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                     
+{"@timestamp":"2025-09-11T01:54:17.585697-03:00","@version":"1","message":"The following 1 profile is active: \"local\"","logger_name":"com.example.loan.api.LoanApiApplicationTests","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                              
+{"@timestamp":"2025-09-11T01:54:17.961099-03:00","@version":"1","message":"Bootstrapping Spring Data JPA repositories in DEFAULT mode.","logger_name":"org.springframework.data.repository.config.RepositoryConfigurationDelegate","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                 
+{"@timestamp":"2025-09-11T01:54:17.98618-03:00","@version":"1","message":"Finished Spring Data repository scanning in 21 ms. Found 2 JPA repository interfaces.","logger_name":"org.springframework.data.repository.config.RepositoryConfigurationDelegate","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                                                                   
+{"@timestamp":"2025-09-11T01:54:18.281796-03:00","@version":"1","message":"HHH000204: Processing PersistenceUnitInfo [name: default]","logger_name":"org.hibernate.jpa.internal.util.LogHelper","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                    
+{"@timestamp":"2025-09-11T01:54:18.323103-03:00","@version":"1","message":"HHH000412: Hibernate ORM core version 6.5.2.Final","logger_name":"org.hibernate.Version","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                                                
+{"@timestamp":"2025-09-11T01:54:18.351632-03:00","@version":"1","message":"HHH000026: Second-level cache disabled","logger_name":"org.hibernate.cache.internal.RegionFactoryInitiator","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                             
+{"@timestamp":"2025-09-11T01:54:18.42113-03:00","@version":"1","message":"No LoadTimeWeaver setup: ignoring JPA class transformer","logger_name":"org.springframework.orm.jpa.persistenceunit.SpringPersistenceUnitInfo","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                           
+{"@timestamp":"2025-09-11T01:54:18.437568-03:00","@version":"1","message":"HikariPool-1 - Starting...","logger_name":"com.zaxxer.hikari.HikariDataSource","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                                                          
+{"@timestamp":"2025-09-11T01:54:18.558732-03:00","@version":"1","message":"HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:loans user=SA","logger_name":"com.zaxxer.hikari.pool.HikariPool","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                 
+{"@timestamp":"2025-09-11T01:54:18.559806-03:00","@version":"1","message":"HikariPool-1 - Start completed.","logger_name":"com.zaxxer.hikari.HikariDataSource","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                                                     
+{"@timestamp":"2025-09-11T01:54:18.57778-03:00","@version":"1","message":"HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)","logger_name":"org.hibernate.orm.deprecation","thread_name":"main","level":"WARN","level_value":30000,"service":"loan-api"}                                                                           
+{"@timestamp":"2025-09-11T01:54:18.987647-03:00","@version":"1","message":"HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)","logger_name":"org.hibernate.engine.transaction.jta.platform.internal.JtaPlatformInitiator","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                                    
+{"@timestamp":"2025-09-11T01:54:19.005254-03:00","@version":"1","message":"Initialized JPA EntityManagerFactory for persistence unit 'default'","logger_name":"org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                 
+{"@timestamp":"2025-09-11T01:54:19.366796-03:00","@version":"1","message":"[Channel<1>: (flagd:8013)] Failed to resolve name. status=Status{code=UNAVAILABLE, description=Unable to resolve host flagd, cause=java.lang.RuntimeException: java.net.UnknownHostException: flagd: nodename nor servname provided, or not known\n\tat io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)\n\tat io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)\n\tat io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.base/java.lang.Thread.run(Thread.java:1583)\nCaused by: java.net.UnknownHostException: flagd: nodename nor servname provided, or not known\n\tat java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Native Method)\n\tat java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:52)\n\tat java.base/java.net.InetAddress$PlatformResolver.lookupByName(InetAddress.java:1211)\n\tat java.base/java.net.InetAddress.getAddressesFromNameService(InetAddress.java:1828)\n\tat java.base/java.net.InetAddress$NameServiceAddresses.get(InetAddress.java:1139)\n\tat java.base/java.net.InetAddress.getAllByName0(InetAddress.java:1818)\n\tat java.base/java.net.InetAddress.getAllByName(InetAddress.java:1688)\n\tat io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)\n\tat io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)\n\t... 5 more\n}","logger_name":"io.grpc.internal.ManagedChannelImpl","thread_name":"grpc-default-executor-0","level":"WARN","level_value":30000,"service":"loan-api"}        
+{"@timestamp":"2025-09-11T01:54:19.377162-03:00","@version":"1","message":"event stream","logger_name":"dev.openfeature.contrib.providers.flagd.resolver.grpc.EventStreamObserver","thread_name":"grpc-default-executor-0","level":"WARN","level_value":30000,"stack_trace":"io.grpc.StatusRuntimeException: UNAVAILABLE: Unable to resolve host flagd\n\tat io.grpc.Status.asRuntimeException(Status.java:533)\n\tat io.grpc.stub.ClientCalls$StreamObserverToCallListenerAdapter.onClose(ClientCalls.java:481)\n\tat io.grpc.internal.DelayedClientCall$DelayedListener$3.run(DelayedClientCall.java:489)\n\tat io.grpc.internal.DelayedClientCall$DelayedListener.drainPendingCallbacks(DelayedClientCall.java:528)\n\tat io.grpc.internal.DelayedClientCall$1DrainListenerRunnable.runInContext(DelayedClientCall.java:317)\n\tat io.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.base/java.lang.Thread.run(Thread.java:1583)\nCaused by: java.lang.RuntimeException: java.net.UnknownHostException: flagd: nodename nor servname provided, or not known\n\tat io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)\n\tat io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)\n\tat io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)\n\t... 3 common frames omitted\nCaused by: java.net.UnknownHostException: flagd: nodename nor servname provided, or not known\n\tat java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Native Method)\n\tat java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:52)\n\tat java.base/java.net.InetAddress$PlatformResolver.lookupByName(InetAddress.java:1211)\n\tat java.base/java.net.InetAddress.getAddressesFromNameService(InetAddress.java:1828)\n\tat java.base/java.net.InetAddress$NameServiceAddresses.get(InetAddress.java:1139)\n\tat java.base/java.net.InetAddress.getAllByName0(InetAddress.java:1818)\n\tat java.base/java.net.InetAddress.getAllByName(InetAddress.java:1688)\n\tat io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)\n\tat io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)\n\t... 5 common frames omitted\n","service":"loan-api"}                                                        
+{"@timestamp":"2025-09-11T01:54:19.569351-03:00","@version":"1","message":"spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning","logger_name":"org.springframework.boot.autoconfigure.orm.jpa.JpaBaseConfiguration$JpaWebConfiguration","thread_name":"main","level":"WARN","level_value":30000,"service":"loan-api"}                                                                                              
+{"@timestamp":"2025-09-11T01:54:19.655562-03:00","@version":"1","message":"Exception when initializing feature provider dev.openfeature.contrib.providers.flagd.FlagdProvider","logger_name":"dev.openfeature.sdk.ProviderRepository","thread_name":"Thread-3","level":"ERROR","level_value":40000,"stack_trace":"dev.openfeature.sdk.exceptions.GeneralError: Deadline exceeded. Condition did not complete within the 500 deadline\n\tat dev.openfeature.contrib.providers.flagd.resolver.common.Util.busyWaitAndCheck(Util.java:27)\n\tat dev.openfeature.contrib.providers.flagd.resolver.grpc.GrpcConnector.initialize(GrpcConnector.java:77)\n\tat dev.openfeature.contrib.providers.flagd.resolver.grpc.GrpcResolver.init(GrpcResolver.java:77)\n\tat dev.openfeature.contrib.providers.flagd.FlagdProvider.initialize(FlagdProvider.java:77)\n\tat dev.openfeature.sdk.ProviderRepository.initializeProvider(ProviderRepository.java:136)\n\tat dev.openfeature.sdk.ProviderRepository.lambda$prepareAndInitializeProvider$3(ProviderRepository.java:124)\n\tat java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)\n\tat java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.base/java.lang.Thread.run(Thread.java:1583)\n","service":"loan-api"}                                        
+{"@timestamp":"2025-09-11T01:54:19.950272-03:00","@version":"1","message":"Exposing 2 endpoints beneath base path '/actuator'","logger_name":"org.springframework.boot.actuate.endpoint.web.EndpointLinksResolver","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                 
+{"@timestamp":"2025-09-11T01:54:19.998223-03:00","@version":"1","message":"Started LoanApiApplicationTests in 2.444 seconds (process running for 5.537)","logger_name":"com.example.loan.api.LoanApiApplicationTests","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                              
+```
+
+---
+
+<think><details><summary>Thought Process</summary>**Confirming dependencies**
+
+I initially removed the second block because it had dependencies that didn't apply to the scope of those two items. Instead, I kept the first block since it covered the scope test for both and included the necessary kafka-clients. Now, I should open the POM file to confirm that everything aligns correctly and that I'm not missing anything important in the setup. It's always good to double-check!</details></think>
+
+---
+
+Read file: undefined
+
+---
+
+<think><details><summary>Thought Process</summary>**Investigating build errors**
+
+I'm digging into the Maven builds, where the e2e-tests are added last, meaning dependencies need to be built first. So, I’m wondering why a "cannot find symbol" error arises—it could be due to the testCompile phase happening after compiling the dependencies. However, e2e-test imports like LoanApiApplication and LoanNotificationServiceApplication are in the test code. Yet, the testCompile can’t resolve them because the e2e-tests module seems to lack those classes in its classpath. I must have missed something with the dependency scopes.
+**Analyzing module publication issues**
+
+I'm considering that maybe the modules aren’t published to the repository, raising concerns about the correct groupId and artifactId. They seem to be declared correctly, though. The earlier debug classpath listings from failsafe show that loan-api was included properly. Yet, the testCompile stage fails before failing failsafe. I wonder if the packaging of loan-api and loan-notification-service is impacting this; they include main classes, but those classes exist in the right package. It's a bit confusing! There was an earlier error about tests not matching patterns too.
+**Identifying compile errors**
+
+I'm noticing that the compile error now includes two other errors we thought we fixed, one about MediaType and another regarding the close() method on WebServerApplicationContext, which we've changed to use ConfigurableApplicationContext. Good progress! However, we're still facing issues with application classes not being found. Could it be that we've set the dependencies' scope to test? The maven-compiler-plugin should be including both compile and test-scoped dependencies, so I’m puzzled about why it’s failing. I'll have to think through the multi-module dependencies and resolution logic more carefully.
+**Exploring Java module issues**
+
+I'm thinking maybe the Java module path (JPMS) is causing interference because the root pluginManagement sets surefire and failsafe to useModulePath false. Yet, the maven-compiler-plugin might default to true for the useModulePath property. Earlier pluginManagement didn’t set this, which is strange. Another thought is that the artifactId coordinates in the e2e-tests dependencies might not include the correct groupId. We've included it, so hopefully that's good. I’ll try building just the e2e-tests module again to check the testCompile classpath with a specific command and see if that resolves the issues.
+**Planning status update and tests**
+
+I realize we should maintain a status update note since the instructions require it. The user has asked to build all projects and run unit/integration tests, so I need to run those tests on the core modules first, which is done with an exit code of 0. For e2e-tests, I have two options: either I can fix the dependency issue or note it as an issue with a solution. Keeping the test scope seems correct, but since the compile plugin uses them, it’s a bit confusing. Let’s run the debug compile as planned to explore further.</details></think>
+
+---
+
+I'll inspect why `e2e-tests` can't see `LoanApiApplication` and `LoanNotificationServiceApplication` by running a targeted test-compile with debug to review the effective test classpath and confirm whether those module jars are present.
+
+---
+
+```bash
+cd /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs && mvn -pl e2e-tests -am -DskipTests -X test-compile | cat
+```
+
+```
+[DEBUG]             com.google.guava:guava:jar:33.2.1-android:test
+[DEBUG]                com.google.guava:failureaccess:jar:1.0.2:test
+[DEBUG]                com.google.guava:listenablefuture:jar:9999.0-empty-to-avoid-conflict-with-guava:test
+[DEBUG]                com.google.j2objc:j2objc-annotations:jar:3.0.0:test
+[DEBUG]             com.google.errorprone:error_prone_annotations:jar:2.28.0:test
+[DEBUG]             io.perfmark:perfmark-api:jar:0.27.0:test
+[DEBUG]             io.netty:netty-transport-native-unix-common:jar:4.1.112.Final:test (version managed from 4.1.100.Final)                                                                                           
+[DEBUG]             io.grpc:grpc-util:jar:1.66.0:test
+[DEBUG]          io.grpc:grpc-protobuf:jar:1.66.0:test
+[DEBUG]             com.google.code.findbugs:jsr305:jar:3.0.2:test
+[DEBUG]             com.google.protobuf:protobuf-java:jar:3.25.3:test
+[DEBUG]             com.google.api.grpc:proto-google-common-protos:jar:2.41.0:test
+[DEBUG]             io.grpc:grpc-protobuf-lite:jar:1.66.0:test
+[DEBUG]          io.grpc:grpc-stub:jar:1.66.0:test
+[DEBUG]          io.netty:netty-transport-native-epoll:jar:linux-x86_64:4.1.112.Final:test (version managed from 4.1.112.Final)                                                                                       
+[DEBUG]             io.netty:netty-common:jar:4.1.112.Final:test (version managed from 4.1.112.Final)
+[DEBUG]             io.netty:netty-buffer:jar:4.1.112.Final:test (version managed from 4.1.112.Final)
+[DEBUG]             io.netty:netty-transport:jar:4.1.112.Final:test (version managed from 4.1.112.Final)
+[DEBUG]                io.netty:netty-resolver:jar:4.1.112.Final:test (version managed from 4.1.112.Final)
+[DEBUG]             io.netty:netty-transport-classes-epoll:jar:4.1.112.Final:test (version managed from 4.1.112.Final)                                                                                                
+[DEBUG]          io.github.jamsesso:json-logic-java:jar:1.0.7:test
+[DEBUG]          com.google.code.gson:gson:jar:2.10.1:test (version managed from 2.11.0)
+[DEBUG]          com.networknt:json-schema-validator:jar:1.5.1:test
+[DEBUG]             com.ethlo.time:itu:jar:1.10.2:test
+[DEBUG]             com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:jar:2.17.2:test (version managed from 2.17.1)                                                                                            
+[DEBUG]          org.apache.commons:commons-collections4:jar:4.4:test
+[DEBUG]          org.semver4j:semver4j:jar:5.3.0:test
+[DEBUG]          commons-codec:commons-codec:jar:1.16.1:test (version managed from 1.17.1)
+[DEBUG]       org.springdoc:springdoc-openapi-starter-webmvc-ui:jar:2.6.0:test
+[DEBUG]          org.springdoc:springdoc-openapi-starter-webmvc-api:jar:2.6.0:test
+[DEBUG]             org.springdoc:springdoc-openapi-starter-common:jar:2.6.0:test
+[DEBUG]                io.swagger.core.v3:swagger-core-jakarta:jar:2.2.22:test
+[DEBUG]                   org.apache.commons:commons-lang3:jar:3.14.0:test (version managed from 3.14.0)
+[DEBUG]                   io.swagger.core.v3:swagger-annotations-jakarta:jar:2.2.22:test
+[DEBUG]                   io.swagger.core.v3:swagger-models-jakarta:jar:2.2.22:test
+[DEBUG]          org.webjars:swagger-ui:jar:5.17.14:test
+[DEBUG]       net.logstash.logback:logstash-logback-encoder:jar:7.4:test
+[DEBUG]       org.postgresql:postgresql:jar:42.7.3:test (version managed from 42.7.3)
+[DEBUG]          org.checkerframework:checker-qual:jar:3.42.0:test
+[DEBUG]       com.h2database:h2:jar:2.2.224:test (version managed from 2.2.224)
+[DEBUG]       org.flywaydb:flyway-core:jar:10.10.0:test (version managed from 10.10.0)
+[DEBUG]          com.fasterxml.jackson.dataformat:jackson-dataformat-toml:jar:2.17.2:test (version managed from 2.15.2)                                                                                               
+[DEBUG]       com.example:loan-events:jar:0.1.0-SNAPSHOT:test
+[DEBUG]    com.example:loan-notification-service:jar:0.1.0-SNAPSHOT:test
+[INFO] 
+[INFO] --- maven-resources-plugin:2.6:resources (default-resources) @ e2e-tests ---
+[DEBUG] Configuring mojo org.apache.maven.plugins:maven-resources-plugin:2.6:resources from plugin realm ClassRealm[plugin>org.apache.maven.plugins:maven-resources-plugin:2.6, parent: jdk.internal.loader.ClassLoaders$AppClassLoader@18b4aac2]                                                                                
+[DEBUG] Configuring mojo 'org.apache.maven.plugins:maven-resources-plugin:2.6:resources' with basic configurator -->                                                                                                  
+[DEBUG]   (f) buildFilters = []
+[DEBUG]   (f) encoding = UTF-8
+[DEBUG]   (f) escapeWindowsPaths = true
+[DEBUG]   (s) includeEmptyDirs = false
+[DEBUG]   (s) outputDirectory = /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/classes                                                                                                 
+[DEBUG]   (s) overwrite = false
+[DEBUG]   (f) project = MavenProject: com.example:e2e-tests:0.1.0-SNAPSHOT @ /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/pom.xml                                                           
+[DEBUG]   (s) resources = [Resource {targetPath: null, filtering: false, FileSet {directory: /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/main/resources, PatternSet [includes: {}, excludes: {}]}}]                                                                                               
+[DEBUG]   (f) session = org.apache.maven.execution.MavenSession@1603dc2f
+[DEBUG]   (f) supportMultiLineFiltering = false
+[DEBUG]   (f) useBuildFilters = true
+[DEBUG]   (s) useDefaultDelimiters = true
+[DEBUG] -- end configuration --
+[DEBUG] properties used {env.TERM=xterm-256color, java.specification.version=21, sun.arch.data.model=64, env.AUTOJUMP_SOURCED=1, java.vendor.url=https://www.graalvm.org/, sun.boot.library.path=/Users/tazabreu/.sdkman/candidates/java/21.0.1-graalce/lib, sun.java.command=org.codehaus.plexus.classworlds.launcher.Launcher -pl e2e-tests -am -DskipTests -X test-compile, jdk.debug=release, maven.version=3.8.6, java.specification.vendor=Oracle Corporation, java.version.date=2023-10-17, java.home=/Users/tazabreu/.sdkman/candidates/java/21.0.1-graalce, env.GIT_ASKPASS=/Applications/Cursor.app/Contents/Resources/app/extensions/git/dist/askpass.sh, java.vm.specification.vendor=Oracle Corporation, java.specification.name=Java Platform API Specification, env.NVM_BIN=/Users/tazabreu/.nvm/versions/node/v22.5.1/bin, env.DISABLE_AUTO_UPDATE=true, sun.management.compiler=HotSpot 64-Bit Tiered Compilers, java.runtime.version=21.0.1+12-jvmci-23.1-b19, env.LSCOLORS=Gxfxcxdxbxegedabagacad, env.PATH=/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/Users/tazabreu/.nvm/versions/node/v22.5.1/bin:/Users/tazabreu/.sdkman/candidates/java/current/bin:/Users/tazabreu/.pyenv/shims:/Users/tazabreu/.autojump/bin:/opt/homebrew/bin:/Users/tazabreu/bin:/Users/tazabreu/Library/Application Support/JetBrains/Toolbox/scripts, env.LS_COLORS=di=1;36:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=30;42:ow=30;43, env.ORIGINAL_XDG_CURRENT_DESKTOP=undefined, env.__CFBundleIdentifier=com.todesktop.230313mzl4w4u92, file.encoding=UTF-8, java.vendor.version=GraalVM CE 21.0.1+12.1, env.SHLVL=1, java.io.tmpdir=/var/folders/g_/fl82gjn155763zzw36ttyjlr0000gn/T/, java.version=21.0.1, java.vm.specification.name=Java Virtual Machine Specification, native.encoding=UTF-8, env.SDKMAN_PLATFORM=darwinarm64, java.library.path=/Users/tazabreu/Library/Java/Extensions:/Library/Java/Extensions:/Network/Library/Java/Extensions:/System/Library/Java/Extensions:/usr/lib/java:., stderr.encoding=UTF-8, java.vendor=GraalVM Community, classworlds.conf=/opt/homebrew/Cellar/maven/3.8.6/libexec/bin/m2.conf, sun.io.unicode.encoding=UnicodeBig, env.LANG=en_US.UTF-8, env.COMMAND_MODE=unix2003, user.timezone=America/Sao_Paulo, java.vm.specification.version=21, os.name=Mac OS X, user.home=/Users/tazabreu, env.ZSH=/Users/tazabreu/.oh-my-zsh, env.COLORTERM=truecolor, stdout.encoding=UTF-8, path.separator=:, os.version=15.6.1, java.vm.name=OpenJDK 64-Bit Server VM, env.CURSOR_TRACE_ID=1b03bc0c521d4b57a0266e235435dd71, env.SHELL=/bin/zsh, env.P9K_SSH=0, os.arch=aarch64, env.MallocNanoZone=0, maven.multiModuleProjectDirectory=/Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs, env.MAVEN_PROJECTBASEDIR=/Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs, env.VSCODE_GIT_ASKPASS_NODE=/Applications/Cursor.app/Contents/Frameworks/Cursor Helper (Plugin).app/Contents/MacOS/Cursor Helper (Plugin), java.vm.info=mixed mode, sharing, env.USER=tazabreu, java.class.version=65.0, sun.jnu.encoding=UTF-8, env.SDKMAN_CANDIDATES_API=https://api.sdkman.io/2, env.NVM_INC=/Users/tazabreu/.nvm/versions/node/v22.5.1/include/node, maven.build.version=Apache Maven 3.8.6 (84538c9988a25aec085021c365c560670ad80f63), maven.home=/opt/homebrew/Cellar/maven/3.8.6/libexec, env.VSCODE_GIT_ASKPASS_MAIN=/Applications/Cursor.app/Contents/Resources/app/extensions/git/dist/askpass-main.js, env.JAVA_HOME=/Users/tazabreu/.sdkman/candidates/java/current, file.separator=/, env.LESS=-R, java.vm.compressedOopsMode=Zero based, line.separator=                                                                                              
+, env.TERM_PROGRAM_VERSION=1.5.11, user.name=tazabreu, spring-boot.version=3.3.3, env.PIP_NO_INPUT=true, env.LOGNAME=tazabreu, env.XPC_FLAGS=0x0, env.__CF_USER_TEXT_ENCODING=0x1F5:0x0:0x0, env.SSH_AUTH_SOCK=/private/tmp/com.apple.launchd.DRGfmFpCbQ/Listeners, project.reporting.outputEncoding=UTF-8, env.SDKMAN_DIR=/Users/tazabreu/.sdkman, env.TMPDIR=/var/folders/g_/fl82gjn155763zzw36ttyjlr0000gn/T/, library.jansi.path=/opt/homebrew/Cellar/maven/3.8.6/libexec/lib/jansi-native, env.SDKMAN_CANDIDATES_DIR=/Users/tazabreu/.sdkman/candidates, env.TERM_PROGRAM=vscode, env.OLDPWD=/Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs, env.PWD=/Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs, env.PAGER=sh -c "head -n 10000 | cat", java.class.path=/opt/homebrew/Cellar/maven/3.8.6/libexec/boot/plexus-classworlds-2.6.0.jar, env.HOME=/Users/tazabreu, java.vm.vendor=GraalVM Community, maven.conf=/opt/homebrew/Cellar/maven/3.8.6/libexec/conf, sun.java.launcher=SUN_STANDARD, user.country=BR, env.AUTOJUMP_ERROR_PATH=/Users/tazabreu/Library/autojump/errors.log, sun.cpu.endian=little, user.language=en, env.NVM_DIR=/Users/tazabreu/.nvm, env.VSCODE_GIT_IPC_HANDLE=/var/folders/g_/fl82gjn155763zzw36ttyjlr0000gn/T/vscode-git-97ef5aebb4.sock, jdk.internal.vm.ci.enabled=true, env.npm_config_yes=true, apple.awt.application.name=Launcher, maven.compiler.release=21, env.XPC_SERVICE_NAME=0, env.VSCODE_GIT_ASKPASS_EXTRA_ARGS=, env.COMPOSER_NO_INTERACTION=1, java.runtime.name=OpenJDK Runtime Environment, env.CURSOR_AGENT=1, project.build.sourceEncoding=UTF-8, skipTests=true, env.NVM_CD_FLAGS=-q, env.MAVEN_CMD_LINE_ARGS= -pl e2e-tests -am -DskipTests -X test-compile, java.vendor.url.bug=https://github.com/oracle/graal/issues, user.dir=/Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs, java.vm.version=21.0.1+12-jvmci-23.1-b19}                                                                          
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[DEBUG] resource with targetPath null
+directory /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/main/resources
+excludes []
+includes []
+[INFO] skip non existing resourceDirectory /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/main/resources                                                                                  
+[DEBUG] no use filter components
+[INFO] 
+[INFO] --- maven-compiler-plugin:3.11.0:compile (default-compile) @ e2e-tests ---
+[DEBUG] Configuring mojo org.apache.maven.plugins:maven-compiler-plugin:3.11.0:compile from plugin realm ClassRealm[plugin>org.apache.maven.plugins:maven-compiler-plugin:3.11.0, parent: jdk.internal.loader.ClassLoaders$AppClassLoader@18b4aac2]                                                                              
+[DEBUG] Configuring mojo 'org.apache.maven.plugins:maven-compiler-plugin:3.11.0:compile' with basic configurator -->                                                                                                  
+[DEBUG]   (f) basedir = /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests
+[DEBUG]   (f) buildDirectory = /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target                                                                                                          
+[DEBUG]   (f) compilePath = [/Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/classes]                                                                                                   
+[DEBUG]   (f) compileSourceRoots = [/Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/main/java]                                                                                             
+[DEBUG]   (f) compilerId = javac
+[DEBUG]   (f) createMissingPackageInfoClass = true
+[DEBUG]   (f) debug = true
+[DEBUG]   (f) debugFileName = javac
+[DEBUG]   (f) enablePreview = false
+[DEBUG]   (f) encoding = UTF-8
+[DEBUG]   (f) failOnError = true
+[DEBUG]   (f) failOnWarning = false
+[DEBUG]   (f) forceJavacCompilerUse = false
+[DEBUG]   (f) fork = false
+[DEBUG]   (f) generatedSourcesDirectory = /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/generated-sources/annotations                                                                 
+[DEBUG]   (f) mojoExecution = org.apache.maven.plugins:maven-compiler-plugin:3.11.0:compile {execution: default-compile}                                                                                              
+[DEBUG]   (f) optimize = false
+[DEBUG]   (f) outputDirectory = /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/classes                                                                                                 
+[DEBUG]   (f) parameters = true
+[DEBUG]   (f) project = MavenProject: com.example:e2e-tests:0.1.0-SNAPSHOT @ /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/pom.xml                                                           
+[DEBUG]   (f) projectArtifact = com.example:e2e-tests:jar:0.1.0-SNAPSHOT
+[DEBUG]   (s) release = 21
+[DEBUG]   (f) session = org.apache.maven.execution.MavenSession@1603dc2f
+[DEBUG]   (f) showCompilationChanges = false
+[DEBUG]   (f) showDeprecation = false
+[DEBUG]   (f) showWarnings = true
+[DEBUG]   (f) skipMultiThreadWarning = false
+[DEBUG]   (f) source = 1.8
+[DEBUG]   (f) staleMillis = 0
+[DEBUG]   (s) target = 1.8
+[DEBUG]   (f) useIncrementalCompilation = true
+[DEBUG]   (f) verbose = false
+[DEBUG] -- end configuration --
+[DEBUG] Using compiler 'javac'.
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- maven-resources-plugin:2.6:testResources (default-testResources) @ e2e-tests ---
+[DEBUG] Configuring mojo org.apache.maven.plugins:maven-resources-plugin:2.6:testResources from plugin realm ClassRealm[plugin>org.apache.maven.plugins:maven-resources-plugin:2.6, parent: jdk.internal.loader.ClassLoaders$AppClassLoader@18b4aac2]                                                                            
+[DEBUG] Configuring mojo 'org.apache.maven.plugins:maven-resources-plugin:2.6:testResources' with basic configurator -->                                                                                              
+[DEBUG]   (f) buildFilters = []
+[DEBUG]   (f) encoding = UTF-8
+[DEBUG]   (f) escapeWindowsPaths = true
+[DEBUG]   (s) includeEmptyDirs = false
+[DEBUG]   (s) outputDirectory = /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/test-classes                                                                                            
+[DEBUG]   (s) overwrite = false
+[DEBUG]   (f) project = MavenProject: com.example:e2e-tests:0.1.0-SNAPSHOT @ /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/pom.xml                                                           
+[DEBUG]   (s) resources = [Resource {targetPath: null, filtering: false, FileSet {directory: /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/resources, PatternSet [includes: {}, excludes: {}]}}]                                                                                               
+[DEBUG]   (f) session = org.apache.maven.execution.MavenSession@1603dc2f
+[DEBUG]   (f) supportMultiLineFiltering = false
+[DEBUG]   (f) useBuildFilters = true
+[DEBUG]   (s) useDefaultDelimiters = true
+[DEBUG] -- end configuration --
+[DEBUG] properties used {env.TERM=xterm-256color, java.specification.version=21, sun.arch.data.model=64, env.AUTOJUMP_SOURCED=1, java.vendor.url=https://www.graalvm.org/, sun.boot.library.path=/Users/tazabreu/.sdkman/candidates/java/21.0.1-graalce/lib, sun.java.command=org.codehaus.plexus.classworlds.launcher.Launcher -pl e2e-tests -am -DskipTests -X test-compile, jdk.debug=release, maven.version=3.8.6, java.specification.vendor=Oracle Corporation, java.version.date=2023-10-17, java.home=/Users/tazabreu/.sdkman/candidates/java/21.0.1-graalce, env.GIT_ASKPASS=/Applications/Cursor.app/Contents/Resources/app/extensions/git/dist/askpass.sh, java.vm.specification.vendor=Oracle Corporation, java.specification.name=Java Platform API Specification, env.NVM_BIN=/Users/tazabreu/.nvm/versions/node/v22.5.1/bin, env.DISABLE_AUTO_UPDATE=true, sun.management.compiler=HotSpot 64-Bit Tiered Compilers, java.runtime.version=21.0.1+12-jvmci-23.1-b19, env.LSCOLORS=Gxfxcxdxbxegedabagacad, env.PATH=/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/Users/tazabreu/.nvm/versions/node/v22.5.1/bin:/Users/tazabreu/.sdkman/candidates/java/current/bin:/Users/tazabreu/.pyenv/shims:/Users/tazabreu/.autojump/bin:/opt/homebrew/bin:/Users/tazabreu/bin:/Users/tazabreu/Library/Application Support/JetBrains/Toolbox/scripts, env.LS_COLORS=di=1;36:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=30;42:ow=30;43, env.ORIGINAL_XDG_CURRENT_DESKTOP=undefined, env.__CFBundleIdentifier=com.todesktop.230313mzl4w4u92, file.encoding=UTF-8, java.vendor.version=GraalVM CE 21.0.1+12.1, env.SHLVL=1, java.io.tmpdir=/var/folders/g_/fl82gjn155763zzw36ttyjlr0000gn/T/, java.version=21.0.1, java.vm.specification.name=Java Virtual Machine Specification, native.encoding=UTF-8, env.SDKMAN_PLATFORM=darwinarm64, java.library.path=/Users/tazabreu/Library/Java/Extensions:/Library/Java/Extensions:/Network/Library/Java/Extensions:/System/Library/Java/Extensions:/usr/lib/java:., stderr.encoding=UTF-8, java.vendor=GraalVM Community, classworlds.conf=/opt/homebrew/Cellar/maven/3.8.6/libexec/bin/m2.conf, sun.io.unicode.encoding=UnicodeBig, env.LANG=en_US.UTF-8, env.COMMAND_MODE=unix2003, user.timezone=America/Sao_Paulo, java.vm.specification.version=21, os.name=Mac OS X, user.home=/Users/tazabreu, env.ZSH=/Users/tazabreu/.oh-my-zsh, env.COLORTERM=truecolor, stdout.encoding=UTF-8, path.separator=:, os.version=15.6.1, java.vm.name=OpenJDK 64-Bit Server VM, env.CURSOR_TRACE_ID=1b03bc0c521d4b57a0266e235435dd71, env.SHELL=/bin/zsh, env.P9K_SSH=0, os.arch=aarch64, env.MallocNanoZone=0, maven.multiModuleProjectDirectory=/Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs, env.MAVEN_PROJECTBASEDIR=/Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs, env.VSCODE_GIT_ASKPASS_NODE=/Applications/Cursor.app/Contents/Frameworks/Cursor Helper (Plugin).app/Contents/MacOS/Cursor Helper (Plugin), java.vm.info=mixed mode, sharing, env.USER=tazabreu, java.class.version=65.0, sun.jnu.encoding=UTF-8, env.SDKMAN_CANDIDATES_API=https://api.sdkman.io/2, env.NVM_INC=/Users/tazabreu/.nvm/versions/node/v22.5.1/include/node, maven.build.version=Apache Maven 3.8.6 (84538c9988a25aec085021c365c560670ad80f63), maven.home=/opt/homebrew/Cellar/maven/3.8.6/libexec, env.VSCODE_GIT_ASKPASS_MAIN=/Applications/Cursor.app/Contents/Resources/app/extensions/git/dist/askpass-main.js, env.JAVA_HOME=/Users/tazabreu/.sdkman/candidates/java/current, file.separator=/, env.LESS=-R, java.vm.compressedOopsMode=Zero based, line.separator=                                                                                              
+, env.TERM_PROGRAM_VERSION=1.5.11, user.name=tazabreu, spring-boot.version=3.3.3, env.PIP_NO_INPUT=true, env.LOGNAME=tazabreu, env.XPC_FLAGS=0x0, env.__CF_USER_TEXT_ENCODING=0x1F5:0x0:0x0, env.SSH_AUTH_SOCK=/private/tmp/com.apple.launchd.DRGfmFpCbQ/Listeners, project.reporting.outputEncoding=UTF-8, env.SDKMAN_DIR=/Users/tazabreu/.sdkman, env.TMPDIR=/var/folders/g_/fl82gjn155763zzw36ttyjlr0000gn/T/, library.jansi.path=/opt/homebrew/Cellar/maven/3.8.6/libexec/lib/jansi-native, env.SDKMAN_CANDIDATES_DIR=/Users/tazabreu/.sdkman/candidates, env.TERM_PROGRAM=vscode, env.OLDPWD=/Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs, env.PWD=/Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs, env.PAGER=sh -c "head -n 10000 | cat", java.class.path=/opt/homebrew/Cellar/maven/3.8.6/libexec/boot/plexus-classworlds-2.6.0.jar, env.HOME=/Users/tazabreu, java.vm.vendor=GraalVM Community, maven.conf=/opt/homebrew/Cellar/maven/3.8.6/libexec/conf, sun.java.launcher=SUN_STANDARD, user.country=BR, env.AUTOJUMP_ERROR_PATH=/Users/tazabreu/Library/autojump/errors.log, sun.cpu.endian=little, user.language=en, env.NVM_DIR=/Users/tazabreu/.nvm, env.VSCODE_GIT_IPC_HANDLE=/var/folders/g_/fl82gjn155763zzw36ttyjlr0000gn/T/vscode-git-97ef5aebb4.sock, jdk.internal.vm.ci.enabled=true, env.npm_config_yes=true, apple.awt.application.name=Launcher, maven.compiler.release=21, env.XPC_SERVICE_NAME=0, env.VSCODE_GIT_ASKPASS_EXTRA_ARGS=, env.COMPOSER_NO_INTERACTION=1, java.runtime.name=OpenJDK Runtime Environment, env.CURSOR_AGENT=1, project.build.sourceEncoding=UTF-8, skipTests=true, env.NVM_CD_FLAGS=-q, env.MAVEN_CMD_LINE_ARGS= -pl e2e-tests -am -DskipTests -X test-compile, java.vendor.url.bug=https://github.com/oracle/graal/issues, user.dir=/Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs, java.vm.version=21.0.1+12-jvmci-23.1-b19}                                                                          
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[DEBUG] resource with targetPath null
+directory /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/resources
+excludes []
+includes []
+[INFO] skip non existing resourceDirectory /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/resources                                                                                  
+[DEBUG] no use filter components
+[INFO] 
+[INFO] --- maven-compiler-plugin:3.11.0:testCompile (default-testCompile) @ e2e-tests ---
+[DEBUG] Configuring mojo org.apache.maven.plugins:maven-compiler-plugin:3.11.0:testCompile from plugin realm ClassRealm[plugin>org.apache.maven.plugins:maven-compiler-plugin:3.11.0, parent: jdk.internal.loader.ClassLoaders$AppClassLoader@18b4aac2]                                                                          
+[DEBUG] Configuring mojo 'org.apache.maven.plugins:maven-compiler-plugin:3.11.0:testCompile' with basic configurator -->                                                                                              
+[DEBUG]   (f) basedir = /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests
+[DEBUG]   (f) buildDirectory = /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target                                                                                                          
+[DEBUG]   (f) compileSourceRoots = [/Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java]                                                                                             
+[DEBUG]   (f) compilerId = javac
+[DEBUG]   (f) createMissingPackageInfoClass = true
+[DEBUG]   (f) debug = true
+[DEBUG]   (f) debugFileName = javac-test
+[DEBUG]   (f) enablePreview = false
+[DEBUG]   (f) encoding = UTF-8
+[DEBUG]   (f) failOnError = true
+[DEBUG]   (f) failOnWarning = false
+[DEBUG]   (f) forceJavacCompilerUse = false
+[DEBUG]   (f) fork = false
+[DEBUG]   (f) generatedTestSourcesDirectory = /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/generated-test-sources/test-annotations                                                   
+[DEBUG]   (f) mojoExecution = org.apache.maven.plugins:maven-compiler-plugin:3.11.0:testCompile {execution: default-testCompile}                                                                                      
+[DEBUG]   (f) optimize = false
+[DEBUG]   (f) outputDirectory = /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/test-classes                                                                                            
+[DEBUG]   (f) parameters = true
+[DEBUG]   (f) project = MavenProject: com.example:e2e-tests:0.1.0-SNAPSHOT @ /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/pom.xml                                                           
+[DEBUG]   (s) release = 21
+[DEBUG]   (f) session = org.apache.maven.execution.MavenSession@1603dc2f
+[DEBUG]   (f) showCompilationChanges = false
+[DEBUG]   (f) showDeprecation = false
+[DEBUG]   (f) showWarnings = true
+[DEBUG]   (f) skipMultiThreadWarning = false
+[DEBUG]   (f) source = 1.8
+[DEBUG]   (f) staleMillis = 0
+[DEBUG]   (s) target = 1.8
+[DEBUG]   (f) testPath = [/Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/test-classes, /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/classes, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-test/3.3.3/spring-boot-starter-test-3.3.3.jar, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter/3.3.3/spring-boot-starter-3.3.3.jar, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot/3.3.3/spring-boot-3.3.3.jar, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-autoconfigure/3.3.3/spring-boot-autoconfigure-3.3.3.jar, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-logging/3.3.3/spring-boot-starter-logging-3.3.3.jar, /Users/tazabreu/.m2/repository/ch/qos/logback/logback-classic/1.5.7/logback-classic-1.5.7.jar, /Users/tazabreu/.m2/repository/ch/qos/logback/logback-core/1.5.7/logback-core-1.5.7.jar, /Users/tazabreu/.m2/repository/org/apache/logging/log4j/log4j-to-slf4j/2.23.1/log4j-to-slf4j-2.23.1.jar, /Users/tazabreu/.m2/repository/org/apache/logging/log4j/log4j-api/2.23.1/log4j-api-2.23.1.jar, /Users/tazabreu/.m2/repository/org/slf4j/jul-to-slf4j/2.0.16/jul-to-slf4j-2.0.16.jar, /Users/tazabreu/.m2/repository/jakarta/annotation/jakarta.annotation-api/2.1.1/jakarta.annotation-api-2.1.1.jar, /Users/tazabreu/.m2/repository/org/yaml/snakeyaml/2.2/snakeyaml-2.2.jar, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-test/3.3.3/spring-boot-test-3.3.3.jar, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-test-autoconfigure/3.3.3/spring-boot-test-autoconfigure-3.3.3.jar, /Users/tazabreu/.m2/repository/com/jayway/jsonpath/json-path/2.9.0/json-path-2.9.0.jar, /Users/tazabreu/.m2/repository/jakarta/xml/bind/jakarta.xml.bind-api/4.0.2/jakarta.xml.bind-api-4.0.2.jar, /Users/tazabreu/.m2/repository/jakarta/activation/jakarta.activation-api/2.1.3/jakarta.activation-api-2.1.3.jar, /Users/tazabreu/.m2/repository/net/minidev/json-smart/2.5.1/json-smart-2.5.1.jar, /Users/tazabreu/.m2/repository/net/minidev/accessors-smart/2.5.1/accessors-smart-2.5.1.jar, /Users/tazabreu/.m2/repository/org/ow2/asm/asm/9.6/asm-9.6.jar, /Users/tazabreu/.m2/repository/org/assertj/assertj-core/3.25.3/assertj-core-3.25.3.jar, /Users/tazabreu/.m2/repository/net/bytebuddy/byte-buddy/1.14.19/byte-buddy-1.14.19.jar, /Users/tazabreu/.m2/repository/org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar, /Users/tazabreu/.m2/repository/org/junit/jupiter/junit-jupiter/5.10.3/junit-jupiter-5.10.3.jar, /Users/tazabreu/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.10.3/junit-jupiter-api-5.10.3.jar, /Users/tazabreu/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar, /Users/tazabreu/.m2/repository/org/junit/platform/junit-platform-commons/1.10.3/junit-platform-commons-1.10.3.jar, /Users/tazabreu/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar, /Users/tazabreu/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.10.3/junit-jupiter-params-5.10.3.jar, /Users/tazabreu/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.10.3/junit-jupiter-engine-5.10.3.jar, /Users/tazabreu/.m2/repository/org/junit/platform/junit-platform-engine/1.10.3/junit-platform-engine-1.10.3.jar, /Users/tazabreu/.m2/repository/org/mockito/mockito-core/5.11.0/mockito-core-5.11.0.jar, /Users/tazabreu/.m2/repository/net/bytebuddy/byte-buddy-agent/1.14.19/byte-buddy-agent-1.14.19.jar, /Users/tazabreu/.m2/repository/org/objenesis/objenesis/3.3/objenesis-3.3.jar, /Users/tazabreu/.m2/repository/org/mockito/mockito-junit-jupiter/5.11.0/mockito-junit-jupiter-5.11.0.jar, /Users/tazabreu/.m2/repository/org/skyscreamer/jsonassert/1.5.3/jsonassert-1.5.3.jar, /Users/tazabreu/.m2/repository/com/vaadin/external/google/android-json/0.0.20131108.vaadin1/android-json-0.0.20131108.vaadin1.jar, /Users/tazabreu/.m2/repository/org/springframework/spring-core/6.1.12/spring-core-6.1.12.jar, /Users/tazabreu/.m2/repository/org/springframework/spring-jcl/6.1.12/spring-jcl-6.1.12.jar, /Users/tazabreu/.m2/repository/org/springframework/spring-test/6.1.12/spring-test-6.1.12.jar, /Users/tazabreu/.m2/repository/org/xmlunit/xmlunit-core/2.9.1/xmlunit-core-2.9.1.jar, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-web/3.3.3/spring-boot-starter-web-3.3.3.jar, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-json/3.3.3/spring-boot-starter-json-3.3.3.jar, /Users/tazabreu/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.17.2/jackson-databind-2.17.2.jar, /Users/tazabreu/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.17.2/jackson-annotations-2.17.2.jar, /Users/tazabreu/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.17.2/jackson-core-2.17.2.jar, /Users/tazabreu/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-jdk8/2.17.2/jackson-datatype-jdk8-2.17.2.jar, /Users/tazabreu/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-jsr310/2.17.2/jackson-datatype-jsr310-2.17.2.jar, /Users/tazabreu/.m2/repository/com/fasterxml/jackson/module/jackson-module-parameter-names/2.17.2/jackson-module-parameter-names-2.17.2.jar, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-tomcat/3.3.3/spring-boot-starter-tomcat-3.3.3.jar, /Users/tazabreu/.m2/repository/org/apache/tomcat/embed/tomcat-embed-core/10.1.28/tomcat-embed-core-10.1.28.jar, /Users/tazabreu/.m2/repository/org/apache/tomcat/embed/tomcat-embed-el/10.1.28/tomcat-embed-el-10.1.28.jar, /Users/tazabreu/.m2/repository/org/apache/tomcat/embed/tomcat-embed-websocket/10.1.28/tomcat-embed-websocket-10.1.28.jar, /Users/tazabreu/.m2/repository/org/springframework/spring-web/6.1.12/spring-web-6.1.12.jar, /Users/tazabreu/.m2/repository/org/springframework/spring-beans/6.1.12/spring-beans-6.1.12.jar, /Users/tazabreu/.m2/repository/io/micrometer/micrometer-observation/1.13.3/micrometer-observation-1.13.3.jar, /Users/tazabreu/.m2/repository/io/micrometer/micrometer-commons/1.13.3/micrometer-commons-1.13.3.jar, /Users/tazabreu/.m2/repository/org/springframework/spring-webmvc/6.1.12/spring-webmvc-6.1.12.jar, /Users/tazabreu/.m2/repository/org/springframework/spring-aop/6.1.12/spring-aop-6.1.12.jar, /Users/tazabreu/.m2/repository/org/springframework/spring-context/6.1.12/spring-context-6.1.12.jar, /Users/tazabreu/.m2/repository/org/springframework/spring-expression/6.1.12/spring-expression-6.1.12.jar, /Users/tazabreu/.m2/repository/org/testcontainers/junit-jupiter/1.19.8/junit-jupiter-1.19.8.jar, /Users/tazabreu/.m2/repository/org/testcontainers/testcontainers/1.19.8/testcontainers-1.19.8.jar, /Users/tazabreu/.m2/repository/junit/junit/4.13.2/junit-4.13.2.jar, /Users/tazabreu/.m2/repository/org/hamcrest/hamcrest-core/2.2/hamcrest-core-2.2.jar, /Users/tazabreu/.m2/repository/org/apache/commons/commons-compress/1.24.0/commons-compress-1.24.0.jar, /Users/tazabreu/.m2/repository/org/rnorth/duct-tape/duct-tape/1.0.8/duct-tape-1.0.8.jar, /Users/tazabreu/.m2/repository/org/jetbrains/annotations/17.0.0/annotations-17.0.0.jar, /Users/tazabreu/.m2/repository/com/github/docker-java/docker-java-api/3.3.6/docker-java-api-3.3.6.jar, /Users/tazabreu/.m2/repository/com/github/docker-java/docker-java-transport-zerodep/3.3.6/docker-java-transport-zerodep-3.3.6.jar, /Users/tazabreu/.m2/repository/com/github/docker-java/docker-java-transport/3.3.6/docker-java-transport-3.3.6.jar, /Users/tazabreu/.m2/repository/net/java/dev/jna/jna/5.13.0/jna-5.13.0.jar, /Users/tazabreu/.m2/repository/org/testcontainers/postgresql/1.19.8/postgresql-1.19.8.jar, /Users/tazabreu/.m2/repository/org/testcontainers/jdbc/1.19.8/jdbc-1.19.8.jar, /Users/tazabreu/.m2/repository/org/testcontainers/database-commons/1.19.8/database-commons-1.19.8.jar, /Users/tazabreu/.m2/repository/org/awaitility/awaitility/4.2.0/awaitility-4.2.0.jar, /Users/tazabreu/.m2/repository/org/apache/kafka/kafka-clients/3.7.1/kafka-clients-3.7.1.jar, /Users/tazabreu/.m2/repository/com/github/luben/zstd-jni/1.5.6-3/zstd-jni-1.5.6-3.jar, /Users/tazabreu/.m2/repository/org/lz4/lz4-java/1.8.0/lz4-java-1.8.0.jar, /Users/tazabreu/.m2/repository/org/xerial/snappy/snappy-java/1.1.10.5/snappy-java-1.1.10.5.jar, /Users/tazabreu/.m2/repository/org/slf4j/slf4j-api/2.0.16/slf4j-api-2.0.16.jar, /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/loan-api/target/classes, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-actuator/3.3.3/spring-boot-starter-actuator-3.3.3.jar, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-actuator-autoconfigure/3.3.3/spring-boot-actuator-autoconfigure-3.3.3.jar, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-actuator/3.3.3/spring-boot-actuator-3.3.3.jar, /Users/tazabreu/.m2/repository/io/micrometer/micrometer-jakarta9/1.13.3/micrometer-jakarta9-1.13.3.jar, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-validation/3.3.3/spring-boot-starter-validation-3.3.3.jar, /Users/tazabreu/.m2/repository/org/hibernate/validator/hibernate-validator/8.0.1.Final/hibernate-validator-8.0.1.Final.jar, /Users/tazabreu/.m2/repository/jakarta/validation/jakarta.validation-api/3.0.2/jakarta.validation-api-3.0.2.jar, /Users/tazabreu/.m2/repository/org/jboss/logging/jboss-logging/3.5.3.Final/jboss-logging-3.5.3.Final.jar, /Users/tazabreu/.m2/repository/com/fasterxml/classmate/1.7.0/classmate-1.7.0.jar, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-data-jpa/3.3.3/spring-boot-starter-data-jpa-3.3.3.jar, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-aop/3.3.3/spring-boot-starter-aop-3.3.3.jar, /Users/tazabreu/.m2/repository/org/aspectj/aspectjweaver/1.9.22.1/aspectjweaver-1.9.22.1.jar, /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-jdbc/3.3.3/spring-boot-starter-jdbc-3.3.3.jar, /Users/tazabreu/.m2/repository/com/zaxxer/HikariCP/5.1.0/HikariCP-5.1.0.jar, /Users/tazabreu/.m2/repository/org/springframework/spring-jdbc/6.1.12/spring-jdbc-6.1.12.jar, /Users/tazabreu/.m2/repository/org/hibernate/orm/hibernate-core/6.5.2.Final/hibernate-core-6.5.2.Final.jar, /Users/tazabreu/.m2/repository/jakarta/persistence/jakarta.persistence-api/3.1.0/jakarta.persistence-api-3.1.0.jar, /Users/tazabreu/.m2/repository/jakarta/transaction/jakarta.transaction-api/2.0.1/jakarta.transaction-api-2.0.1.jar, /Users/tazabreu/.m2/repository/org/hibernate/common/hibernate-commons-annotations/6.0.6.Final/hibernate-commons-annotations-6.0.6.Final.jar, /Users/tazabreu/.m2/repository/io/smallrye/jandex/3.1.2/jandex-3.1.2.jar, /Users/tazabreu/.m2/repository/org/glassfish/jaxb/jaxb-runtime/4.0.5/jaxb-runtime-4.0.5.jar, /Users/tazabreu/.m2/repository/org/glassfish/jaxb/jaxb-core/4.0.5/jaxb-core-4.0.5.jar, /Users/tazabreu/.m2/repository/org/eclipse/angus/angus-activation/2.0.2/angus-activation-2.0.2.jar, /Users/tazabreu/.m2/repository/org/glassfish/jaxb/txw2/4.0.5/txw2-4.0.5.jar, /Users/tazabreu/.m2/repository/com/sun/istack/istack-commons-runtime/4.1.2/istack-commons-runtime-4.1.2.jar, /Users/tazabreu/.m2/repository/jakarta/inject/jakarta.inject-api/2.0.1/jakarta.inject-api-2.0.1.jar, /Users/tazabreu/.m2/repository/org/antlr/antlr4-runtime/4.13.0/antlr4-runtime-4.13.0.jar, /Users/tazabreu/.m2/repository/org/springframework/data/spring-data-jpa/3.3.3/spring-data-jpa-3.3.3.jar, /Users/tazabreu/.m2/repository/org/springframework/data/spring-data-commons/3.3.3/spring-data-commons-3.3.3.jar, /Users/tazabreu/.m2/repository/org/springframework/spring-orm/6.1.12/spring-orm-6.1.12.jar, /Users/tazabreu/.m2/repository/org/springframework/spring-aspects/6.1.12/spring-aspects-6.1.12.jar, /Users/tazabreu/.m2/repository/org/springframework/kafka/spring-kafka/3.2.3/spring-kafka-3.2.3.jar, /Users/tazabreu/.m2/repository/org/springframework/spring-messaging/6.1.12/spring-messaging-6.1.12.jar, /Users/tazabreu/.m2/repository/org/springframework/spring-tx/6.1.12/spring-tx-6.1.12.jar, /Users/tazabreu/.m2/repository/org/springframework/retry/spring-retry/2.0.8/spring-retry-2.0.8.jar, /Users/tazabreu/.m2/repository/io/micrometer/micrometer-registry-prometheus/1.13.3/micrometer-registry-prometheus-1.13.3.jar, /Users/tazabreu/.m2/repository/io/micrometer/micrometer-core/1.13.3/micrometer-core-1.13.3.jar, /Users/tazabreu/.m2/repository/org/hdrhistogram/HdrHistogram/2.2.2/HdrHistogram-2.2.2.jar, /Users/tazabreu/.m2/repository/org/latencyutils/LatencyUtils/2.0.3/LatencyUtils-2.0.3.jar, /Users/tazabreu/.m2/repository/io/prometheus/prometheus-metrics-core/1.2.1/prometheus-metrics-core-1.2.1.jar, /Users/tazabreu/.m2/repository/io/prometheus/prometheus-metrics-model/1.2.1/prometheus-metrics-model-1.2.1.jar, /Users/tazabreu/.m2/repository/io/prometheus/prometheus-metrics-config/1.2.1/prometheus-metrics-config-1.2.1.jar, /Users/tazabreu/.m2/repository/io/prometheus/prometheus-metrics-tracer-common/1.2.1/prometheus-metrics-tracer-common-1.2.1.jar, /Users/tazabreu/.m2/repository/io/prometheus/prometheus-metrics-exposition-formats/1.2.1/prometheus-metrics-exposition-formats-1.2.1.jar, /Users/tazabreu/.m2/repository/io/prometheus/prometheus-metrics-shaded-protobuf/1.2.1/prometheus-metrics-shaded-protobuf-1.2.1.jar, /Users/tazabreu/.m2/repository/io/opentelemetry/opentelemetry-api/1.37.0/opentelemetry-api-1.37.0.jar, /Users/tazabreu/.m2/repository/io/opentelemetry/opentelemetry-context/1.37.0/opentelemetry-context-1.37.0.jar, /Users/tazabreu/.m2/repository/dev/openfeature/sdk/1.9.0/sdk-1.9.0.jar, /Users/tazabreu/.m2/repository/dev/openfeature/contrib/providers/flagd/0.8.6/flagd-0.8.6.jar, /Users/tazabreu/.m2/repository/io/grpc/grpc-netty/1.66.0/grpc-netty-1.66.0.jar, /Users/tazabreu/.m2/repository/io/grpc/grpc-api/1.66.0/grpc-api-1.66.0.jar, /Users/tazabreu/.m2/repository/io/netty/netty-codec-http2/4.1.112.Final/netty-codec-http2-4.1.112.Final.jar, /Users/tazabreu/.m2/repository/io/netty/netty-codec/4.1.112.Final/netty-codec-4.1.112.Final.jar, /Users/tazabreu/.m2/repository/io/netty/netty-handler/4.1.112.Final/netty-handler-4.1.112.Final.jar, /Users/tazabreu/.m2/repository/io/netty/netty-codec-http/4.1.112.Final/netty-codec-http-4.1.112.Final.jar, /Users/tazabreu/.m2/repository/io/grpc/grpc-core/1.66.0/grpc-core-1.66.0.jar, /Users/tazabreu/.m2/repository/com/google/android/annotations/4.1.1.4/annotations-4.1.1.4.jar, /Users/tazabreu/.m2/repository/org/codehaus/mojo/animal-sniffer-annotations/1.24/animal-sniffer-annotations-1.24.jar, /Users/tazabreu/.m2/repository/io/grpc/grpc-context/1.66.0/grpc-context-1.66.0.jar, /Users/tazabreu/.m2/repository/io/netty/netty-handler-proxy/4.1.112.Final/netty-handler-proxy-4.1.112.Final.jar, /Users/tazabreu/.m2/repository/io/netty/netty-codec-socks/4.1.112.Final/netty-codec-socks-4.1.112.Final.jar, /Users/tazabreu/.m2/repository/com/google/guava/guava/33.2.1-android/guava-33.2.1-android.jar, /Users/tazabreu/.m2/repository/com/google/guava/failureaccess/1.0.2/failureaccess-1.0.2.jar, /Users/tazabreu/.m2/repository/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar, /Users/tazabreu/.m2/repository/com/google/j2objc/j2objc-annotations/3.0.0/j2objc-annotations-3.0.0.jar, /Users/tazabreu/.m2/repository/com/google/errorprone/error_prone_annotations/2.28.0/error_prone_annotations-2.28.0.jar, /Users/tazabreu/.m2/repository/io/perfmark/perfmark-api/0.27.0/perfmark-api-0.27.0.jar, /Users/tazabreu/.m2/repository/io/netty/netty-transport-native-unix-common/4.1.112.Final/netty-transport-native-unix-common-4.1.112.Final.jar, /Users/tazabreu/.m2/repository/io/grpc/grpc-util/1.66.0/grpc-util-1.66.0.jar, /Users/tazabreu/.m2/repository/io/grpc/grpc-protobuf/1.66.0/grpc-protobuf-1.66.0.jar, /Users/tazabreu/.m2/repository/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar, /Users/tazabreu/.m2/repository/com/google/protobuf/protobuf-java/3.25.3/protobuf-java-3.25.3.jar, /Users/tazabreu/.m2/repository/com/google/api/grpc/proto-google-common-protos/2.41.0/proto-google-common-protos-2.41.0.jar, /Users/tazabreu/.m2/repository/io/grpc/grpc-protobuf-lite/1.66.0/grpc-protobuf-lite-1.66.0.jar, /Users/tazabreu/.m2/repository/io/grpc/grpc-stub/1.66.0/grpc-stub-1.66.0.jar, /Users/tazabreu/.m2/repository/io/netty/netty-transport-native-epoll/4.1.112.Final/netty-transport-native-epoll-4.1.112.Final-linux-x86_64.jar, /Users/tazabreu/.m2/repository/io/netty/netty-common/4.1.112.Final/netty-common-4.1.112.Final.jar, /Users/tazabreu/.m2/repository/io/netty/netty-buffer/4.1.112.Final/netty-buffer-4.1.112.Final.jar, /Users/tazabreu/.m2/repository/io/netty/netty-transport/4.1.112.Final/netty-transport-4.1.112.Final.jar, /Users/tazabreu/.m2/repository/io/netty/netty-resolver/4.1.112.Final/netty-resolver-4.1.112.Final.jar, /Users/tazabreu/.m2/repository/io/netty/netty-transport-classes-epoll/4.1.112.Final/netty-transport-classes-epoll-4.1.112.Final.jar, /Users/tazabreu/.m2/repository/io/github/jamsesso/json-logic-java/1.0.7/json-logic-java-1.0.7.jar, /Users/tazabreu/.m2/repository/com/google/code/gson/gson/2.10.1/gson-2.10.1.jar, /Users/tazabreu/.m2/repository/com/networknt/json-schema-validator/1.5.1/json-schema-validator-1.5.1.jar, /Users/tazabreu/.m2/repository/com/ethlo/time/itu/1.10.2/itu-1.10.2.jar, /Users/tazabreu/.m2/repository/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.17.2/jackson-dataformat-yaml-2.17.2.jar, /Users/tazabreu/.m2/repository/org/apache/commons/commons-collections4/4.4/commons-collections4-4.4.jar, /Users/tazabreu/.m2/repository/org/semver4j/semver4j/5.3.0/semver4j-5.3.0.jar, /Users/tazabreu/.m2/repository/commons-codec/commons-codec/1.16.1/commons-codec-1.16.1.jar, /Users/tazabreu/.m2/repository/org/springdoc/springdoc-openapi-starter-webmvc-ui/2.6.0/springdoc-openapi-starter-webmvc-ui-2.6.0.jar, /Users/tazabreu/.m2/repository/org/springdoc/springdoc-openapi-starter-webmvc-api/2.6.0/springdoc-openapi-starter-webmvc-api-2.6.0.jar, /Users/tazabreu/.m2/repository/org/springdoc/springdoc-openapi-starter-common/2.6.0/springdoc-openapi-starter-common-2.6.0.jar, /Users/tazabreu/.m2/repository/io/swagger/core/v3/swagger-core-jakarta/2.2.22/swagger-core-jakarta-2.2.22.jar, /Users/tazabreu/.m2/repository/org/apache/commons/commons-lang3/3.14.0/commons-lang3-3.14.0.jar, /Users/tazabreu/.m2/repository/io/swagger/core/v3/swagger-annotations-jakarta/2.2.22/swagger-annotations-jakarta-2.2.22.jar, /Users/tazabreu/.m2/repository/io/swagger/core/v3/swagger-models-jakarta/2.2.22/swagger-models-jakarta-2.2.22.jar, /Users/tazabreu/.m2/repository/org/webjars/swagger-ui/5.17.14/swagger-ui-5.17.14.jar, /Users/tazabreu/.m2/repository/net/logstash/logback/logstash-logback-encoder/7.4/logstash-logback-encoder-7.4.jar, /Users/tazabreu/.m2/repository/org/postgresql/postgresql/42.7.3/postgresql-42.7.3.jar, /Users/tazabreu/.m2/repository/org/checkerframework/checker-qual/3.42.0/checker-qual-3.42.0.jar, /Users/tazabreu/.m2/repository/com/h2database/h2/2.2.224/h2-2.2.224.jar, /Users/tazabreu/.m2/repository/org/flywaydb/flyway-core/10.10.0/flyway-core-10.10.0.jar, /Users/tazabreu/.m2/repository/com/fasterxml/jackson/dataformat/jackson-dataformat-toml/2.17.2/jackson-dataformat-toml-2.17.2.jar, /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/loan-events/target/classes, /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/loan-notification-service/target/classes]                      
+[DEBUG]   (f) useIncrementalCompilation = true
+[DEBUG]   (f) useModulePath = true
+[DEBUG]   (f) verbose = false
+[DEBUG] -- end configuration --
+[DEBUG] Using compiler 'javac'.
+[DEBUG] Adding /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/generated-test-sources/test-annotations to test-compile source roots:                                                    
+  /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java
+[DEBUG] New test-compile source roots:
+  /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java
+  /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/generated-test-sources/test-annotations                                                                                               
+[DEBUG] CompilerReuseStrategy: reuseCreated
+[DEBUG] useIncrementalCompilation enabled
+[DEBUG] Stale source detected: /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java/com/example/loan/e2e/FullLifecycleIT.java                                                         
+[INFO] Changes detected - recompiling the module! :source
+[DEBUG] Classpath:
+[DEBUG]  /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/test-classes
+[DEBUG]  /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/classes
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-test/3.3.3/spring-boot-starter-test-3.3.3.jar                                                                                    
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter/3.3.3/spring-boot-starter-3.3.3.jar                                                                                              
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot/3.3.3/spring-boot-3.3.3.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-autoconfigure/3.3.3/spring-boot-autoconfigure-3.3.3.jar                                                                                  
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-logging/3.3.3/spring-boot-starter-logging-3.3.3.jar                                                                              
+[DEBUG]  /Users/tazabreu/.m2/repository/ch/qos/logback/logback-classic/1.5.7/logback-classic-1.5.7.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/ch/qos/logback/logback-core/1.5.7/logback-core-1.5.7.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/apache/logging/log4j/log4j-to-slf4j/2.23.1/log4j-to-slf4j-2.23.1.jar                                                                                                      
+[DEBUG]  /Users/tazabreu/.m2/repository/org/apache/logging/log4j/log4j-api/2.23.1/log4j-api-2.23.1.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/slf4j/jul-to-slf4j/2.0.16/jul-to-slf4j-2.0.16.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/jakarta/annotation/jakarta.annotation-api/2.1.1/jakarta.annotation-api-2.1.1.jar                                                                                              
+[DEBUG]  /Users/tazabreu/.m2/repository/org/yaml/snakeyaml/2.2/snakeyaml-2.2.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-test/3.3.3/spring-boot-test-3.3.3.jar                                                                                                    
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-test-autoconfigure/3.3.3/spring-boot-test-autoconfigure-3.3.3.jar                                                                        
+[DEBUG]  /Users/tazabreu/.m2/repository/com/jayway/jsonpath/json-path/2.9.0/json-path-2.9.0.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/jakarta/xml/bind/jakarta.xml.bind-api/4.0.2/jakarta.xml.bind-api-4.0.2.jar                                                                                                    
+[DEBUG]  /Users/tazabreu/.m2/repository/jakarta/activation/jakarta.activation-api/2.1.3/jakarta.activation-api-2.1.3.jar                                                                                              
+[DEBUG]  /Users/tazabreu/.m2/repository/net/minidev/json-smart/2.5.1/json-smart-2.5.1.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/net/minidev/accessors-smart/2.5.1/accessors-smart-2.5.1.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/ow2/asm/asm/9.6/asm-9.6.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/assertj/assertj-core/3.25.3/assertj-core-3.25.3.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/net/bytebuddy/byte-buddy/1.14.19/byte-buddy-1.14.19.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/junit/jupiter/junit-jupiter/5.10.3/junit-jupiter-5.10.3.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.10.3/junit-jupiter-api-5.10.3.jar                                                                                                       
+[DEBUG]  /Users/tazabreu/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/junit/platform/junit-platform-commons/1.10.3/junit-platform-commons-1.10.3.jar                                                                                            
+[DEBUG]  /Users/tazabreu/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.10.3/junit-jupiter-params-5.10.3.jar                                                                                                 
+[DEBUG]  /Users/tazabreu/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.10.3/junit-jupiter-engine-5.10.3.jar                                                                                                 
+[DEBUG]  /Users/tazabreu/.m2/repository/org/junit/platform/junit-platform-engine/1.10.3/junit-platform-engine-1.10.3.jar                                                                                              
+[DEBUG]  /Users/tazabreu/.m2/repository/org/mockito/mockito-core/5.11.0/mockito-core-5.11.0.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/net/bytebuddy/byte-buddy-agent/1.14.19/byte-buddy-agent-1.14.19.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/objenesis/objenesis/3.3/objenesis-3.3.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/mockito/mockito-junit-jupiter/5.11.0/mockito-junit-jupiter-5.11.0.jar                                                                                                     
+[DEBUG]  /Users/tazabreu/.m2/repository/org/skyscreamer/jsonassert/1.5.3/jsonassert-1.5.3.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/com/vaadin/external/google/android-json/0.0.20131108.vaadin1/android-json-0.0.20131108.vaadin1.jar                                                                            
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/spring-core/6.1.12/spring-core-6.1.12.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/spring-jcl/6.1.12/spring-jcl-6.1.12.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/spring-test/6.1.12/spring-test-6.1.12.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/xmlunit/xmlunit-core/2.9.1/xmlunit-core-2.9.1.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-web/3.3.3/spring-boot-starter-web-3.3.3.jar                                                                                      
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-json/3.3.3/spring-boot-starter-json-3.3.3.jar                                                                                    
+[DEBUG]  /Users/tazabreu/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.17.2/jackson-databind-2.17.2.jar                                                                                                
+[DEBUG]  /Users/tazabreu/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.17.2/jackson-annotations-2.17.2.jar                                                                                          
+[DEBUG]  /Users/tazabreu/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.17.2/jackson-core-2.17.2.jar                                                                                                        
+[DEBUG]  /Users/tazabreu/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-jdk8/2.17.2/jackson-datatype-jdk8-2.17.2.jar                                                                                  
+[DEBUG]  /Users/tazabreu/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-jsr310/2.17.2/jackson-datatype-jsr310-2.17.2.jar                                                                              
+[DEBUG]  /Users/tazabreu/.m2/repository/com/fasterxml/jackson/module/jackson-module-parameter-names/2.17.2/jackson-module-parameter-names-2.17.2.jar                                                                  
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-tomcat/3.3.3/spring-boot-starter-tomcat-3.3.3.jar                                                                                
+[DEBUG]  /Users/tazabreu/.m2/repository/org/apache/tomcat/embed/tomcat-embed-core/10.1.28/tomcat-embed-core-10.1.28.jar                                                                                               
+[DEBUG]  /Users/tazabreu/.m2/repository/org/apache/tomcat/embed/tomcat-embed-el/10.1.28/tomcat-embed-el-10.1.28.jar                                                                                                   
+[DEBUG]  /Users/tazabreu/.m2/repository/org/apache/tomcat/embed/tomcat-embed-websocket/10.1.28/tomcat-embed-websocket-10.1.28.jar                                                                                     
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/spring-web/6.1.12/spring-web-6.1.12.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/spring-beans/6.1.12/spring-beans-6.1.12.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/io/micrometer/micrometer-observation/1.13.3/micrometer-observation-1.13.3.jar                                                                                                 
+[DEBUG]  /Users/tazabreu/.m2/repository/io/micrometer/micrometer-commons/1.13.3/micrometer-commons-1.13.3.jar                                                                                                         
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/spring-webmvc/6.1.12/spring-webmvc-6.1.12.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/spring-aop/6.1.12/spring-aop-6.1.12.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/spring-context/6.1.12/spring-context-6.1.12.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/spring-expression/6.1.12/spring-expression-6.1.12.jar                                                                                                     
+[DEBUG]  /Users/tazabreu/.m2/repository/org/testcontainers/junit-jupiter/1.19.8/junit-jupiter-1.19.8.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/testcontainers/testcontainers/1.19.8/testcontainers-1.19.8.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/junit/junit/4.13.2/junit-4.13.2.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/hamcrest/hamcrest-core/2.2/hamcrest-core-2.2.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/apache/commons/commons-compress/1.24.0/commons-compress-1.24.0.jar                                                                                                        
+[DEBUG]  /Users/tazabreu/.m2/repository/org/rnorth/duct-tape/duct-tape/1.0.8/duct-tape-1.0.8.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/jetbrains/annotations/17.0.0/annotations-17.0.0.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/com/github/docker-java/docker-java-api/3.3.6/docker-java-api-3.3.6.jar                                                                                                        
+[DEBUG]  /Users/tazabreu/.m2/repository/com/github/docker-java/docker-java-transport-zerodep/3.3.6/docker-java-transport-zerodep-3.3.6.jar                                                                            
+[DEBUG]  /Users/tazabreu/.m2/repository/com/github/docker-java/docker-java-transport/3.3.6/docker-java-transport-3.3.6.jar                                                                                            
+[DEBUG]  /Users/tazabreu/.m2/repository/net/java/dev/jna/jna/5.13.0/jna-5.13.0.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/testcontainers/postgresql/1.19.8/postgresql-1.19.8.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/testcontainers/jdbc/1.19.8/jdbc-1.19.8.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/testcontainers/database-commons/1.19.8/database-commons-1.19.8.jar                                                                                                        
+[DEBUG]  /Users/tazabreu/.m2/repository/org/awaitility/awaitility/4.2.0/awaitility-4.2.0.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/apache/kafka/kafka-clients/3.7.1/kafka-clients-3.7.1.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/com/github/luben/zstd-jni/1.5.6-3/zstd-jni-1.5.6-3.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/lz4/lz4-java/1.8.0/lz4-java-1.8.0.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/xerial/snappy/snappy-java/1.1.10.5/snappy-java-1.1.10.5.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/slf4j/slf4j-api/2.0.16/slf4j-api-2.0.16.jar
+[DEBUG]  /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/loan-api/target/classes
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-actuator/3.3.3/spring-boot-starter-actuator-3.3.3.jar                                                                            
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-actuator-autoconfigure/3.3.3/spring-boot-actuator-autoconfigure-3.3.3.jar                                                                
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-actuator/3.3.3/spring-boot-actuator-3.3.3.jar                                                                                            
+[DEBUG]  /Users/tazabreu/.m2/repository/io/micrometer/micrometer-jakarta9/1.13.3/micrometer-jakarta9-1.13.3.jar                                                                                                       
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-validation/3.3.3/spring-boot-starter-validation-3.3.3.jar                                                                        
+[DEBUG]  /Users/tazabreu/.m2/repository/org/hibernate/validator/hibernate-validator/8.0.1.Final/hibernate-validator-8.0.1.Final.jar                                                                                   
+[DEBUG]  /Users/tazabreu/.m2/repository/jakarta/validation/jakarta.validation-api/3.0.2/jakarta.validation-api-3.0.2.jar                                                                                              
+[DEBUG]  /Users/tazabreu/.m2/repository/org/jboss/logging/jboss-logging/3.5.3.Final/jboss-logging-3.5.3.Final.jar                                                                                                     
+[DEBUG]  /Users/tazabreu/.m2/repository/com/fasterxml/classmate/1.7.0/classmate-1.7.0.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-data-jpa/3.3.3/spring-boot-starter-data-jpa-3.3.3.jar                                                                            
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-aop/3.3.3/spring-boot-starter-aop-3.3.3.jar                                                                                      
+[DEBUG]  /Users/tazabreu/.m2/repository/org/aspectj/aspectjweaver/1.9.22.1/aspectjweaver-1.9.22.1.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-jdbc/3.3.3/spring-boot-starter-jdbc-3.3.3.jar                                                                                    
+[DEBUG]  /Users/tazabreu/.m2/repository/com/zaxxer/HikariCP/5.1.0/HikariCP-5.1.0.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/spring-jdbc/6.1.12/spring-jdbc-6.1.12.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/hibernate/orm/hibernate-core/6.5.2.Final/hibernate-core-6.5.2.Final.jar                                                                                                   
+[DEBUG]  /Users/tazabreu/.m2/repository/jakarta/persistence/jakarta.persistence-api/3.1.0/jakarta.persistence-api-3.1.0.jar                                                                                           
+[DEBUG]  /Users/tazabreu/.m2/repository/jakarta/transaction/jakarta.transaction-api/2.0.1/jakarta.transaction-api-2.0.1.jar                                                                                           
+[DEBUG]  /Users/tazabreu/.m2/repository/org/hibernate/common/hibernate-commons-annotations/6.0.6.Final/hibernate-commons-annotations-6.0.6.Final.jar                                                                  
+[DEBUG]  /Users/tazabreu/.m2/repository/io/smallrye/jandex/3.1.2/jandex-3.1.2.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/glassfish/jaxb/jaxb-runtime/4.0.5/jaxb-runtime-4.0.5.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/glassfish/jaxb/jaxb-core/4.0.5/jaxb-core-4.0.5.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/eclipse/angus/angus-activation/2.0.2/angus-activation-2.0.2.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/glassfish/jaxb/txw2/4.0.5/txw2-4.0.5.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/com/sun/istack/istack-commons-runtime/4.1.2/istack-commons-runtime-4.1.2.jar                                                                                                  
+[DEBUG]  /Users/tazabreu/.m2/repository/jakarta/inject/jakarta.inject-api/2.0.1/jakarta.inject-api-2.0.1.jar                                                                                                          
+[DEBUG]  /Users/tazabreu/.m2/repository/org/antlr/antlr4-runtime/4.13.0/antlr4-runtime-4.13.0.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/data/spring-data-jpa/3.3.3/spring-data-jpa-3.3.3.jar                                                                                                      
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/data/spring-data-commons/3.3.3/spring-data-commons-3.3.3.jar                                                                                              
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/spring-orm/6.1.12/spring-orm-6.1.12.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/spring-aspects/6.1.12/spring-aspects-6.1.12.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/kafka/spring-kafka/3.2.3/spring-kafka-3.2.3.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/spring-messaging/6.1.12/spring-messaging-6.1.12.jar                                                                                                       
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/spring-tx/6.1.12/spring-tx-6.1.12.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springframework/retry/spring-retry/2.0.8/spring-retry-2.0.8.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/io/micrometer/micrometer-registry-prometheus/1.13.3/micrometer-registry-prometheus-1.13.3.jar                                                                                 
+[DEBUG]  /Users/tazabreu/.m2/repository/io/micrometer/micrometer-core/1.13.3/micrometer-core-1.13.3.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/hdrhistogram/HdrHistogram/2.2.2/HdrHistogram-2.2.2.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/latencyutils/LatencyUtils/2.0.3/LatencyUtils-2.0.3.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/io/prometheus/prometheus-metrics-core/1.2.1/prometheus-metrics-core-1.2.1.jar                                                                                                 
+[DEBUG]  /Users/tazabreu/.m2/repository/io/prometheus/prometheus-metrics-model/1.2.1/prometheus-metrics-model-1.2.1.jar                                                                                               
+[DEBUG]  /Users/tazabreu/.m2/repository/io/prometheus/prometheus-metrics-config/1.2.1/prometheus-metrics-config-1.2.1.jar                                                                                             
+[DEBUG]  /Users/tazabreu/.m2/repository/io/prometheus/prometheus-metrics-tracer-common/1.2.1/prometheus-metrics-tracer-common-1.2.1.jar                                                                               
+[DEBUG]  /Users/tazabreu/.m2/repository/io/prometheus/prometheus-metrics-exposition-formats/1.2.1/prometheus-metrics-exposition-formats-1.2.1.jar                                                                     
+[DEBUG]  /Users/tazabreu/.m2/repository/io/prometheus/prometheus-metrics-shaded-protobuf/1.2.1/prometheus-metrics-shaded-protobuf-1.2.1.jar                                                                           
+[DEBUG]  /Users/tazabreu/.m2/repository/io/opentelemetry/opentelemetry-api/1.37.0/opentelemetry-api-1.37.0.jar                                                                                                        
+[DEBUG]  /Users/tazabreu/.m2/repository/io/opentelemetry/opentelemetry-context/1.37.0/opentelemetry-context-1.37.0.jar                                                                                                
+[DEBUG]  /Users/tazabreu/.m2/repository/dev/openfeature/sdk/1.9.0/sdk-1.9.0.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/dev/openfeature/contrib/providers/flagd/0.8.6/flagd-0.8.6.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/io/grpc/grpc-netty/1.66.0/grpc-netty-1.66.0.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/io/grpc/grpc-api/1.66.0/grpc-api-1.66.0.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/io/netty/netty-codec-http2/4.1.112.Final/netty-codec-http2-4.1.112.Final.jar                                                                                                  
+[DEBUG]  /Users/tazabreu/.m2/repository/io/netty/netty-codec/4.1.112.Final/netty-codec-4.1.112.Final.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/io/netty/netty-handler/4.1.112.Final/netty-handler-4.1.112.Final.jar                                                                                                          
+[DEBUG]  /Users/tazabreu/.m2/repository/io/netty/netty-codec-http/4.1.112.Final/netty-codec-http-4.1.112.Final.jar                                                                                                    
+[DEBUG]  /Users/tazabreu/.m2/repository/io/grpc/grpc-core/1.66.0/grpc-core-1.66.0.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/com/google/android/annotations/4.1.1.4/annotations-4.1.1.4.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/codehaus/mojo/animal-sniffer-annotations/1.24/animal-sniffer-annotations-1.24.jar                                                                                         
+[DEBUG]  /Users/tazabreu/.m2/repository/io/grpc/grpc-context/1.66.0/grpc-context-1.66.0.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/io/netty/netty-handler-proxy/4.1.112.Final/netty-handler-proxy-4.1.112.Final.jar                                                                                              
+[DEBUG]  /Users/tazabreu/.m2/repository/io/netty/netty-codec-socks/4.1.112.Final/netty-codec-socks-4.1.112.Final.jar                                                                                                  
+[DEBUG]  /Users/tazabreu/.m2/repository/com/google/guava/guava/33.2.1-android/guava-33.2.1-android.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/com/google/guava/failureaccess/1.0.2/failureaccess-1.0.2.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar                                    
+[DEBUG]  /Users/tazabreu/.m2/repository/com/google/j2objc/j2objc-annotations/3.0.0/j2objc-annotations-3.0.0.jar                                                                                                       
+[DEBUG]  /Users/tazabreu/.m2/repository/com/google/errorprone/error_prone_annotations/2.28.0/error_prone_annotations-2.28.0.jar                                                                                       
+[DEBUG]  /Users/tazabreu/.m2/repository/io/perfmark/perfmark-api/0.27.0/perfmark-api-0.27.0.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/io/netty/netty-transport-native-unix-common/4.1.112.Final/netty-transport-native-unix-common-4.1.112.Final.jar                                                                
+[DEBUG]  /Users/tazabreu/.m2/repository/io/grpc/grpc-util/1.66.0/grpc-util-1.66.0.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/io/grpc/grpc-protobuf/1.66.0/grpc-protobuf-1.66.0.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/com/google/protobuf/protobuf-java/3.25.3/protobuf-java-3.25.3.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/com/google/api/grpc/proto-google-common-protos/2.41.0/proto-google-common-protos-2.41.0.jar                                                                                   
+[DEBUG]  /Users/tazabreu/.m2/repository/io/grpc/grpc-protobuf-lite/1.66.0/grpc-protobuf-lite-1.66.0.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/io/grpc/grpc-stub/1.66.0/grpc-stub-1.66.0.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/io/netty/netty-transport-native-epoll/4.1.112.Final/netty-transport-native-epoll-4.1.112.Final-linux-x86_64.jar                                                               
+[DEBUG]  /Users/tazabreu/.m2/repository/io/netty/netty-common/4.1.112.Final/netty-common-4.1.112.Final.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/io/netty/netty-buffer/4.1.112.Final/netty-buffer-4.1.112.Final.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/io/netty/netty-transport/4.1.112.Final/netty-transport-4.1.112.Final.jar                                                                                                      
+[DEBUG]  /Users/tazabreu/.m2/repository/io/netty/netty-resolver/4.1.112.Final/netty-resolver-4.1.112.Final.jar                                                                                                        
+[DEBUG]  /Users/tazabreu/.m2/repository/io/netty/netty-transport-classes-epoll/4.1.112.Final/netty-transport-classes-epoll-4.1.112.Final.jar                                                                          
+[DEBUG]  /Users/tazabreu/.m2/repository/io/github/jamsesso/json-logic-java/1.0.7/json-logic-java-1.0.7.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/com/google/code/gson/gson/2.10.1/gson-2.10.1.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/com/networknt/json-schema-validator/1.5.1/json-schema-validator-1.5.1.jar                                                                                                     
+[DEBUG]  /Users/tazabreu/.m2/repository/com/ethlo/time/itu/1.10.2/itu-1.10.2.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.17.2/jackson-dataformat-yaml-2.17.2.jar                                                                            
+[DEBUG]  /Users/tazabreu/.m2/repository/org/apache/commons/commons-collections4/4.4/commons-collections4-4.4.jar                                                                                                      
+[DEBUG]  /Users/tazabreu/.m2/repository/org/semver4j/semver4j/5.3.0/semver4j-5.3.0.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/commons-codec/commons-codec/1.16.1/commons-codec-1.16.1.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springdoc/springdoc-openapi-starter-webmvc-ui/2.6.0/springdoc-openapi-starter-webmvc-ui-2.6.0.jar                                                                         
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springdoc/springdoc-openapi-starter-webmvc-api/2.6.0/springdoc-openapi-starter-webmvc-api-2.6.0.jar                                                                       
+[DEBUG]  /Users/tazabreu/.m2/repository/org/springdoc/springdoc-openapi-starter-common/2.6.0/springdoc-openapi-starter-common-2.6.0.jar                                                                               
+[DEBUG]  /Users/tazabreu/.m2/repository/io/swagger/core/v3/swagger-core-jakarta/2.2.22/swagger-core-jakarta-2.2.22.jar                                                                                                
+[DEBUG]  /Users/tazabreu/.m2/repository/org/apache/commons/commons-lang3/3.14.0/commons-lang3-3.14.0.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/io/swagger/core/v3/swagger-annotations-jakarta/2.2.22/swagger-annotations-jakarta-2.2.22.jar                                                                                  
+[DEBUG]  /Users/tazabreu/.m2/repository/io/swagger/core/v3/swagger-models-jakarta/2.2.22/swagger-models-jakarta-2.2.22.jar                                                                                            
+[DEBUG]  /Users/tazabreu/.m2/repository/org/webjars/swagger-ui/5.17.14/swagger-ui-5.17.14.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/net/logstash/logback/logstash-logback-encoder/7.4/logstash-logback-encoder-7.4.jar                                                                                            
+[DEBUG]  /Users/tazabreu/.m2/repository/org/postgresql/postgresql/42.7.3/postgresql-42.7.3.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/checkerframework/checker-qual/3.42.0/checker-qual-3.42.0.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/com/h2database/h2/2.2.224/h2-2.2.224.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/org/flywaydb/flyway-core/10.10.0/flyway-core-10.10.0.jar
+[DEBUG]  /Users/tazabreu/.m2/repository/com/fasterxml/jackson/dataformat/jackson-dataformat-toml/2.17.2/jackson-dataformat-toml-2.17.2.jar                                                                            
+[DEBUG]  /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/loan-events/target/classes
+[DEBUG]  /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/loan-notification-service/target/classes                                                                                                        
+[DEBUG] Source roots:
+[DEBUG]  /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java
+[DEBUG]  /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/generated-test-sources/test-annotations                                                                                        
+[DEBUG] Command line options:
+[DEBUG] -d /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/test-classes -classpath /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/test-classes:/Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/classes:/Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-test/3.3.3/spring-boot-starter-test-3.3.3.jar:/Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter/3.3.3/spring-boot-starter-3.3.3.jar:/Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot/3.3.3/spring-boot-3.3.3.jar:/Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-autoconfigure/3.3.3/spring-boot-autoconfigure-3.3.3.jar:/Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-logging/3.3.3/spring-boot-starter-logging-3.3.3.jar:/Users/tazabreu/.m2/repository/ch/qos/logback/logback-classic/1.5.7/logback-classic-1.5.7.jar:/Users/tazabreu/.m2/repository/ch/qos/logback/logback-core/1.5.7/logback-core-1.5.7.jar:/Users/tazabreu/.m2/repository/org/apache/logging/log4j/log4j-to-slf4j/2.23.1/log4j-to-slf4j-2.23.1.jar:/Users/tazabreu/.m2/repository/org/apache/logging/log4j/log4j-api/2.23.1/log4j-api-2.23.1.jar:/Users/tazabreu/.m2/repository/org/slf4j/jul-to-slf4j/2.0.16/jul-to-slf4j-2.0.16.jar:/Users/tazabreu/.m2/repository/jakarta/annotation/jakarta.annotation-api/2.1.1/jakarta.annotation-api-2.1.1.jar:/Users/tazabreu/.m2/repository/org/yaml/snakeyaml/2.2/snakeyaml-2.2.jar:/Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-test/3.3.3/spring-boot-test-3.3.3.jar:/Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-test-autoconfigure/3.3.3/spring-boot-test-autoconfigure-3.3.3.jar:/Users/tazabreu/.m2/repository/com/jayway/jsonpath/json-path/2.9.0/json-path-2.9.0.jar:/Users/tazabreu/.m2/repository/jakarta/xml/bind/jakarta.xml.bind-api/4.0.2/jakarta.xml.bind-api-4.0.2.jar:/Users/tazabreu/.m2/repository/jakarta/activation/jakarta.activation-api/2.1.3/jakarta.activation-api-2.1.3.jar:/Users/tazabreu/.m2/repository/net/minidev/json-smart/2.5.1/json-smart-2.5.1.jar:/Users/tazabreu/.m2/repository/net/minidev/accessors-smart/2.5.1/accessors-smart-2.5.1.jar:/Users/tazabreu/.m2/repository/org/ow2/asm/asm/9.6/asm-9.6.jar:/Users/tazabreu/.m2/repository/org/assertj/assertj-core/3.25.3/assertj-core-3.25.3.jar:/Users/tazabreu/.m2/repository/net/bytebuddy/byte-buddy/1.14.19/byte-buddy-1.14.19.jar:/Users/tazabreu/.m2/repository/org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar:/Users/tazabreu/.m2/repository/org/junit/jupiter/junit-jupiter/5.10.3/junit-jupiter-5.10.3.jar:/Users/tazabreu/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.10.3/junit-jupiter-api-5.10.3.jar:/Users/tazabreu/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/Users/tazabreu/.m2/repository/org/junit/platform/junit-platform-commons/1.10.3/junit-platform-commons-1.10.3.jar:/Users/tazabreu/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/Users/tazabreu/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.10.3/junit-jupiter-params-5.10.3.jar:/Users/tazabreu/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.10.3/junit-jupiter-engine-5.10.3.jar:/Users/tazabreu/.m2/repository/org/junit/platform/junit-platform-engine/1.10.3/junit-platform-engine-1.10.3.jar:/Users/tazabreu/.m2/repository/org/mockito/mockito-core/5.11.0/mockito-core-5.11.0.jar:/Users/tazabreu/.m2/repository/net/bytebuddy/byte-buddy-agent/1.14.19/byte-buddy-agent-1.14.19.jar:/Users/tazabreu/.m2/repository/org/objenesis/objenesis/3.3/objenesis-3.3.jar:/Users/tazabreu/.m2/repository/org/mockito/mockito-junit-jupiter/5.11.0/mockito-junit-jupiter-5.11.0.jar:/Users/tazabreu/.m2/repository/org/skyscreamer/jsonassert/1.5.3/jsonassert-1.5.3.jar:/Users/tazabreu/.m2/repository/com/vaadin/external/google/android-json/0.0.20131108.vaadin1/android-json-0.0.20131108.vaadin1.jar:/Users/tazabreu/.m2/repository/org/springframework/spring-core/6.1.12/spring-core-6.1.12.jar:/Users/tazabreu/.m2/repository/org/springframework/spring-jcl/6.1.12/spring-jcl-6.1.12.jar:/Users/tazabreu/.m2/repository/org/springframework/spring-test/6.1.12/spring-test-6.1.12.jar:/Users/tazabreu/.m2/repository/org/xmlunit/xmlunit-core/2.9.1/xmlunit-core-2.9.1.jar:/Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-web/3.3.3/spring-boot-starter-web-3.3.3.jar:/Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-json/3.3.3/spring-boot-starter-json-3.3.3.jar:/Users/tazabreu/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.17.2/jackson-databind-2.17.2.jar:/Users/tazabreu/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.17.2/jackson-annotations-2.17.2.jar:/Users/tazabreu/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.17.2/jackson-core-2.17.2.jar:/Users/tazabreu/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-jdk8/2.17.2/jackson-datatype-jdk8-2.17.2.jar:/Users/tazabreu/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-jsr310/2.17.2/jackson-datatype-jsr310-2.17.2.jar:/Users/tazabreu/.m2/repository/com/fasterxml/jackson/module/jackson-module-parameter-names/2.17.2/jackson-module-parameter-names-2.17.2.jar:/Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-tomcat/3.3.3/spring-boot-starter-tomcat-3.3.3.jar:/Users/tazabreu/.m2/repository/org/apache/tomcat/embed/tomcat-embed-core/10.1.28/tomcat-embed-core-10.1.28.jar:/Users/tazabreu/.m2/repository/org/apache/tomcat/embed/tomcat-embed-el/10.1.28/tomcat-embed-el-10.1.28.jar:/Users/tazabreu/.m2/repository/org/apache/tomcat/embed/tomcat-embed-websocket/10.1.28/tomcat-embed-websocket-10.1.28.jar:/Users/tazabreu/.m2/repository/org/springframework/spring-web/6.1.12/spring-web-6.1.12.jar:/Users/tazabreu/.m2/repository/org/springframework/spring-beans/6.1.12/spring-beans-6.1.12.jar:/Users/tazabreu/.m2/repository/io/micrometer/micrometer-observation/1.13.3/micrometer-observation-1.13.3.jar:/Users/tazabreu/.m2/repository/io/micrometer/micrometer-commons/1.13.3/micrometer-commons-1.13.3.jar:/Users/tazabreu/.m2/repository/org/springframework/spring-webmvc/6.1.12/spring-webmvc-6.1.12.jar:/Users/tazabreu/.m2/repository/org/springframework/spring-aop/6.1.12/spring-aop-6.1.12.jar:/Users/tazabreu/.m2/repository/org/springframework/spring-context/6.1.12/spring-context-6.1.12.jar:/Users/tazabreu/.m2/repository/org/springframework/spring-expression/6.1.12/spring-expression-6.1.12.jar:/Users/tazabreu/.m2/repository/org/testcontainers/junit-jupiter/1.19.8/junit-jupiter-1.19.8.jar:/Users/tazabreu/.m2/repository/org/testcontainers/testcontainers/1.19.8/testcontainers-1.19.8.jar:/Users/tazabreu/.m2/repository/junit/junit/4.13.2/junit-4.13.2.jar:/Users/tazabreu/.m2/repository/org/hamcrest/hamcrest-core/2.2/hamcrest-core-2.2.jar:/Users/tazabreu/.m2/repository/org/apache/commons/commons-compress/1.24.0/commons-compress-1.24.0.jar:/Users/tazabreu/.m2/repository/org/rnorth/duct-tape/duct-tape/1.0.8/duct-tape-1.0.8.jar:/Users/tazabreu/.m2/repository/org/jetbrains/annotations/17.0.0/annotations-17.0.0.jar:/Users/tazabreu/.m2/repository/com/github/docker-java/docker-java-api/3.3.6/docker-java-api-3.3.6.jar:/Users/tazabreu/.m2/repository/com/github/docker-java/docker-java-transport-zerodep/3.3.6/docker-java-transport-zerodep-3.3.6.jar:/Users/tazabreu/.m2/repository/com/github/docker-java/docker-java-transport/3.3.6/docker-java-transport-3.3.6.jar:/Users/tazabreu/.m2/repository/net/java/dev/jna/jna/5.13.0/jna-5.13.0.jar:/Users/tazabreu/.m2/repository/org/testcontainers/postgresql/1.19.8/postgresql-1.19.8.jar:/Users/tazabreu/.m2/repository/org/testcontainers/jdbc/1.19.8/jdbc-1.19.8.jar:/Users/tazabreu/.m2/repository/org/testcontainers/database-commons/1.19.8/database-commons-1.19.8.jar:/Users/tazabreu/.m2/repository/org/awaitility/awaitility/4.2.0/awaitility-4.2.0.jar:/Users/tazabreu/.m2/repository/org/apache/kafka/kafka-clients/3.7.1/kafka-clients-3.7.1.jar:/Users/tazabreu/.m2/repository/com/github/luben/zstd-jni/1.5.6-3/zstd-jni-1.5.6-3.jar:/Users/tazabreu/.m2/repository/org/lz4/lz4-java/1.8.0/lz4-java-1.8.0.jar:/Users/tazabreu/.m2/repository/org/xerial/snappy/snappy-java/1.1.10.5/snappy-java-1.1.10.5.jar:/Users/tazabreu/.m2/repository/org/slf4j/slf4j-api/2.0.16/slf4j-api-2.0.16.jar:/Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/loan-api/target/classes:/Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-actuator/3.3.3/spring-boot-starter-actuator-3.3.3.jar:/Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-actuator-autoconfigure/3.3.3/spring-boot-actuator-autoconfigure-3.3.3.jar:/Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-actuator/3.3.3/spring-boot-actuator-3.3.3.jar:/Users/tazabreu/.m2/repository/io/micrometer/micrometer-jakarta9/1.13.3/micrometer-jakarta9-1.13.3.jar:/Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-validation/3.3.3/spring-boot-starter-validation-3.3.3.jar:/Users/tazabreu/.m2/repository/org/hibernate/validator/hibernate-validator/8.0.1.Final/hibernate-validator-8.0.1.Final.jar:/Users/tazabreu/.m2/repository/jakarta/validation/jakarta.validation-api/3.0.2/jakarta.validation-api-3.0.2.jar:/Users/tazabreu/.m2/repository/org/jboss/logging/jboss-logging/3.5.3.Final/jboss-logging-3.5.3.Final.jar:/Users/tazabreu/.m2/repository/com/fasterxml/classmate/1.7.0/classmate-1.7.0.jar:/Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-data-jpa/3.3.3/spring-boot-starter-data-jpa-3.3.3.jar:/Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-aop/3.3.3/spring-boot-starter-aop-3.3.3.jar:/Users/tazabreu/.m2/repository/org/aspectj/aspectjweaver/1.9.22.1/aspectjweaver-1.9.22.1.jar:/Users/tazabreu/.m2/repository/org/springframework/boot/spring-boot-starter-jdbc/3.3.3/spring-boot-starter-jdbc-3.3.3.jar:/Users/tazabreu/.m2/repository/com/zaxxer/HikariCP/5.1.0/HikariCP-5.1.0.jar:/Users/tazabreu/.m2/repository/org/springframework/spring-jdbc/6.1.12/spring-jdbc-6.1.12.jar:/Users/tazabreu/.m2/repository/org/hibernate/orm/hibernate-core/6.5.2.Final/hibernate-core-6.5.2.Final.jar:/Users/tazabreu/.m2/repository/jakarta/persistence/jakarta.persistence-api/3.1.0/jakarta.persistence-api-3.1.0.jar:/Users/tazabreu/.m2/repository/jakarta/transaction/jakarta.transaction-api/2.0.1/jakarta.transaction-api-2.0.1.jar:/Users/tazabreu/.m2/repository/org/hibernate/common/hibernate-commons-annotations/6.0.6.Final/hibernate-commons-annotations-6.0.6.Final.jar:/Users/tazabreu/.m2/repository/io/smallrye/jandex/3.1.2/jandex-3.1.2.jar:/Users/tazabreu/.m2/repository/org/glassfish/jaxb/jaxb-runtime/4.0.5/jaxb-runtime-4.0.5.jar:/Users/tazabreu/.m2/repository/org/glassfish/jaxb/jaxb-core/4.0.5/jaxb-core-4.0.5.jar:/Users/tazabreu/.m2/repository/org/eclipse/angus/angus-activation/2.0.2/angus-activation-2.0.2.jar:/Users/tazabreu/.m2/repository/org/glassfish/jaxb/txw2/4.0.5/txw2-4.0.5.jar:/Users/tazabreu/.m2/repository/com/sun/istack/istack-commons-runtime/4.1.2/istack-commons-runtime-4.1.2.jar:/Users/tazabreu/.m2/repository/jakarta/inject/jakarta.inject-api/2.0.1/jakarta.inject-api-2.0.1.jar:/Users/tazabreu/.m2/repository/org/antlr/antlr4-runtime/4.13.0/antlr4-runtime-4.13.0.jar:/Users/tazabreu/.m2/repository/org/springframework/data/spring-data-jpa/3.3.3/spring-data-jpa-3.3.3.jar:/Users/tazabreu/.m2/repository/org/springframework/data/spring-data-commons/3.3.3/spring-data-commons-3.3.3.jar:/Users/tazabreu/.m2/repository/org/springframework/spring-orm/6.1.12/spring-orm-6.1.12.jar:/Users/tazabreu/.m2/repository/org/springframework/spring-aspects/6.1.12/spring-aspects-6.1.12.jar:/Users/tazabreu/.m2/repository/org/springframework/kafka/spring-kafka/3.2.3/spring-kafka-3.2.3.jar:/Users/tazabreu/.m2/repository/org/springframework/spring-messaging/6.1.12/spring-messaging-6.1.12.jar:/Users/tazabreu/.m2/repository/org/springframework/spring-tx/6.1.12/spring-tx-6.1.12.jar:/Users/tazabreu/.m2/repository/org/springframework/retry/spring-retry/2.0.8/spring-retry-2.0.8.jar:/Users/tazabreu/.m2/repository/io/micrometer/micrometer-registry-prometheus/1.13.3/micrometer-registry-prometheus-1.13.3.jar:/Users/tazabreu/.m2/repository/io/micrometer/micrometer-core/1.13.3/micrometer-core-1.13.3.jar:/Users/tazabreu/.m2/repository/org/hdrhistogram/HdrHistogram/2.2.2/HdrHistogram-2.2.2.jar:/Users/tazabreu/.m2/repository/org/latencyutils/LatencyUtils/2.0.3/LatencyUtils-2.0.3.jar:/Users/tazabreu/.m2/repository/io/prometheus/prometheus-metrics-core/1.2.1/prometheus-metrics-core-1.2.1.jar:/Users/tazabreu/.m2/repository/io/prometheus/prometheus-metrics-model/1.2.1/prometheus-metrics-model-1.2.1.jar:/Users/tazabreu/.m2/repository/io/prometheus/prometheus-metrics-config/1.2.1/prometheus-metrics-config-1.2.1.jar:/Users/tazabreu/.m2/repository/io/prometheus/prometheus-metrics-tracer-common/1.2.1/prometheus-metrics-tracer-common-1.2.1.jar:/Users/tazabreu/.m2/repository/io/prometheus/prometheus-metrics-exposition-formats/1.2.1/prometheus-metrics-exposition-formats-1.2.1.jar:/Users/tazabreu/.m2/repository/io/prometheus/prometheus-metrics-shaded-protobuf/1.2.1/prometheus-metrics-shaded-protobuf-1.2.1.jar:/Users/tazabreu/.m2/repository/io/opentelemetry/opentelemetry-api/1.37.0/opentelemetry-api-1.37.0.jar:/Users/tazabreu/.m2/repository/io/opentelemetry/opentelemetry-context/1.37.0/opentelemetry-context-1.37.0.jar:/Users/tazabreu/.m2/repository/dev/openfeature/sdk/1.9.0/sdk-1.9.0.jar:/Users/tazabreu/.m2/repository/dev/openfeature/contrib/providers/flagd/0.8.6/flagd-0.8.6.jar:/Users/tazabreu/.m2/repository/io/grpc/grpc-netty/1.66.0/grpc-netty-1.66.0.jar:/Users/tazabreu/.m2/repository/io/grpc/grpc-api/1.66.0/grpc-api-1.66.0.jar:/Users/tazabreu/.m2/repository/io/netty/netty-codec-http2/4.1.112.Final/netty-codec-http2-4.1.112.Final.jar:/Users/tazabreu/.m2/repository/io/netty/netty-codec/4.1.112.Final/netty-codec-4.1.112.Final.jar:/Users/tazabreu/.m2/repository/io/netty/netty-handler/4.1.112.Final/netty-handler-4.1.112.Final.jar:/Users/tazabreu/.m2/repository/io/netty/netty-codec-http/4.1.112.Final/netty-codec-http-4.1.112.Final.jar:/Users/tazabreu/.m2/repository/io/grpc/grpc-core/1.66.0/grpc-core-1.66.0.jar:/Users/tazabreu/.m2/repository/com/google/android/annotations/4.1.1.4/annotations-4.1.1.4.jar:/Users/tazabreu/.m2/repository/org/codehaus/mojo/animal-sniffer-annotations/1.24/animal-sniffer-annotations-1.24.jar:/Users/tazabreu/.m2/repository/io/grpc/grpc-context/1.66.0/grpc-context-1.66.0.jar:/Users/tazabreu/.m2/repository/io/netty/netty-handler-proxy/4.1.112.Final/netty-handler-proxy-4.1.112.Final.jar:/Users/tazabreu/.m2/repository/io/netty/netty-codec-socks/4.1.112.Final/netty-codec-socks-4.1.112.Final.jar:/Users/tazabreu/.m2/repository/com/google/guava/guava/33.2.1-android/guava-33.2.1-android.jar:/Users/tazabreu/.m2/repository/com/google/guava/failureaccess/1.0.2/failureaccess-1.0.2.jar:/Users/tazabreu/.m2/repository/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar:/Users/tazabreu/.m2/repository/com/google/j2objc/j2objc-annotations/3.0.0/j2objc-annotations-3.0.0.jar:/Users/tazabreu/.m2/repository/com/google/errorprone/error_prone_annotations/2.28.0/error_prone_annotations-2.28.0.jar:/Users/tazabreu/.m2/repository/io/perfmark/perfmark-api/0.27.0/perfmark-api-0.27.0.jar:/Users/tazabreu/.m2/repository/io/netty/netty-transport-native-unix-common/4.1.112.Final/netty-transport-native-unix-common-4.1.112.Final.jar:/Users/tazabreu/.m2/repository/io/grpc/grpc-util/1.66.0/grpc-util-1.66.0.jar:/Users/tazabreu/.m2/repository/io/grpc/grpc-protobuf/1.66.0/grpc-protobuf-1.66.0.jar:/Users/tazabreu/.m2/repository/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar:/Users/tazabreu/.m2/repository/com/google/protobuf/protobuf-java/3.25.3/protobuf-java-3.25.3.jar:/Users/tazabreu/.m2/repository/com/google/api/grpc/proto-google-common-protos/2.41.0/proto-google-common-protos-2.41.0.jar:/Users/tazabreu/.m2/repository/io/grpc/grpc-protobuf-lite/1.66.0/grpc-protobuf-lite-1.66.0.jar:/Users/tazabreu/.m2/repository/io/grpc/grpc-stub/1.66.0/grpc-stub-1.66.0.jar:/Users/tazabreu/.m2/repository/io/netty/netty-transport-native-epoll/4.1.112.Final/netty-transport-native-epoll-4.1.112.Final-linux-x86_64.jar:/Users/tazabreu/.m2/repository/io/netty/netty-common/4.1.112.Final/netty-common-4.1.112.Final.jar:/Users/tazabreu/.m2/repository/io/netty/netty-buffer/4.1.112.Final/netty-buffer-4.1.112.Final.jar:/Users/tazabreu/.m2/repository/io/netty/netty-transport/4.1.112.Final/netty-transport-4.1.112.Final.jar:/Users/tazabreu/.m2/repository/io/netty/netty-resolver/4.1.112.Final/netty-resolver-4.1.112.Final.jar:/Users/tazabreu/.m2/repository/io/netty/netty-transport-classes-epoll/4.1.112.Final/netty-transport-classes-epoll-4.1.112.Final.jar:/Users/tazabreu/.m2/repository/io/github/jamsesso/json-logic-java/1.0.7/json-logic-java-1.0.7.jar:/Users/tazabreu/.m2/repository/com/google/code/gson/gson/2.10.1/gson-2.10.1.jar:/Users/tazabreu/.m2/repository/com/networknt/json-schema-validator/1.5.1/json-schema-validator-1.5.1.jar:/Users/tazabreu/.m2/repository/com/ethlo/time/itu/1.10.2/itu-1.10.2.jar:/Users/tazabreu/.m2/repository/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.17.2/jackson-dataformat-yaml-2.17.2.jar:/Users/tazabreu/.m2/repository/org/apache/commons/commons-collections4/4.4/commons-collections4-4.4.jar:/Users/tazabreu/.m2/repository/org/semver4j/semver4j/5.3.0/semver4j-5.3.0.jar:/Users/tazabreu/.m2/repository/commons-codec/commons-codec/1.16.1/commons-codec-1.16.1.jar:/Users/tazabreu/.m2/repository/org/springdoc/springdoc-openapi-starter-webmvc-ui/2.6.0/springdoc-openapi-starter-webmvc-ui-2.6.0.jar:/Users/tazabreu/.m2/repository/org/springdoc/springdoc-openapi-starter-webmvc-api/2.6.0/springdoc-openapi-starter-webmvc-api-2.6.0.jar:/Users/tazabreu/.m2/repository/org/springdoc/springdoc-openapi-starter-common/2.6.0/springdoc-openapi-starter-common-2.6.0.jar:/Users/tazabreu/.m2/repository/io/swagger/core/v3/swagger-core-jakarta/2.2.22/swagger-core-jakarta-2.2.22.jar:/Users/tazabreu/.m2/repository/org/apache/commons/commons-lang3/3.14.0/commons-lang3-3.14.0.jar:/Users/tazabreu/.m2/repository/io/swagger/core/v3/swagger-annotations-jakarta/2.2.22/swagger-annotations-jakarta-2.2.22.jar:/Users/tazabreu/.m2/repository/io/swagger/core/v3/swagger-models-jakarta/2.2.22/swagger-models-jakarta-2.2.22.jar:/Users/tazabreu/.m2/repository/org/webjars/swagger-ui/5.17.14/swagger-ui-5.17.14.jar:/Users/tazabreu/.m2/repository/net/logstash/logback/logstash-logback-encoder/7.4/logstash-logback-encoder-7.4.jar:/Users/tazabreu/.m2/repository/org/postgresql/postgresql/42.7.3/postgresql-42.7.3.jar:/Users/tazabreu/.m2/repository/org/checkerframework/checker-qual/3.42.0/checker-qual-3.42.0.jar:/Users/tazabreu/.m2/repository/com/h2database/h2/2.2.224/h2-2.2.224.jar:/Users/tazabreu/.m2/repository/org/flywaydb/flyway-core/10.10.0/flyway-core-10.10.0.jar:/Users/tazabreu/.m2/repository/com/fasterxml/jackson/dataformat/jackson-dataformat-toml/2.17.2/jackson-dataformat-toml-2.17.2.jar:/Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/loan-events/target/classes:/Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/loan-notification-service/target/classes: -sourcepath /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/src/test/java:/Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/generated-test-sources/test-annotations: -s /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/generated-test-sources/test-annotations -g -parameters --release 21 -encoding UTF-8                                                               
+[DEBUG] incrementalBuildHelper#beforeRebuildExecution
+[INFO] Compiling 1 source file with javac [debug release 21] to target/test-classes
+[DEBUG] incrementalBuildHelper#afterRebuildExecution
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Summary for loan-system 0.1.0-SNAPSHOT:
+[INFO] 
+[INFO] loan-system ........................................ SUCCESS [  0.001 s]
+[INFO] loan-events ........................................ SUCCESS [  0.786 s]
+[INFO] loan-api ........................................... SUCCESS [  1.226 s]
+[INFO] loan-notification-service .......................... SUCCESS [  0.027 s]
+[INFO] e2e-tests .......................................... SUCCESS [  1.697 s]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  4.229 s
+[INFO] Finished at: 2025-09-11T01:55:17-03:00
+[INFO] ------------------------------------------------------------------------
+```
+
+---
+
+<think><details><summary>Thought Process</summary>**Running E2E Tests**
+
+The E2E-tests module had failed during the test-compile, but after making adjustments, we succeeded in compiling. Now, it’s time to run `mvn -pl e2e-tests -am verify`, especially since we've created the `FullLifecycleIT` which should now pick up tests. Previously, the failsafe summary showed zero tests because they were missing. However, running the full E2E test will start containers, and there might be issues with Kafka’s port binding at 29092. The user wants to build, run tests, and report issues in a table.
+**Evaluating Test Initialization**
+
+The test aims to start both apps in the same JVM, using classes from the modules. I've added `loan-api` and `loan-notification-service` as test scope dependencies, so they should be on the classpath as `target/classes` instead of jars, thanks to the reactor flag. However, I'm seeing warning and error logs about connecting to 'flagd'. While the tests pass, if we start boot apps in the end-to-end environment, it may attempt to initialize Flagd again, which could generate logs without crashing the app. Also, the Kafka container requires Docker, which the user might not have running; if Testcontainers cannot reach the Docker daemon, it will fail with an error.
+**Running Tests and Reporting**
+
+The repository asked me to run tests, but our environment lacks information about Docker. I’ll go ahead and run the `e2e-tests verify` to see if it fails, keeping in mind to adjust the verbosity by removing the quiet flag to capture logs. We also need to follow developer instructions for updating statuses and issues. Before I make tool calls, I’ll include a status update sentence. After running `mvn -pl e2e-tests -am verify`, I’ll prepare a markdown table listing discovered issues and their solutions.
+**Gathering Potential Issues**
+
+After running the tests, I've seen that the earlier compile errors for e2e-tests have been resolved. Now, the potential issues could stem from the Failsafe test running, which may pass or fail due to the Kafka port or Docker not being active. If it passes, it indicates no issues except for flagd warnings. The question asks for a table. If there are no issues, the table can remain empty or just note the warnings. We modified the root pom to include e2e-tests, and even though a commit wasn’t requested, we applied patches. I’m thinking we should update our todos: mark "build-core-modules" as complete since that build is done. For "run e2e tests," I might create a new todo for running e2e-tests, or I could use the existing "diagnose-failures" if it's still in progress. Let's proceed with that!
+**Proceeding with the Tests**
+
+The tool mentions that operations like "searching/examining" shouldn't be included as todos, but running tests is definitely valid. I’ll mark "build-core-modules" as completed and set "run e2e-tests" in progress. My plan is to execute `todo_write merge=true` to finalize that update.
+
+Next, I’ll run the terminal command `mvn -pl e2e-tests -am verify`. After running the tests, I'll gather any failures. If there are issues, I'll parse the output and create a markdown table listing the problems and possible solutions. Let's get started!</details></think>
+
+---
+
+I built core modules successfully. Now I'll run the e2e-tests integration test suite to surface any remaining issues and then summarize them in a table.
+
+---
+
+## Todo List
+
+- [!] Run E2E integration tests for e2e-tests module
+- [-] Diagnose and report any test failures
+- [ ] Explain e2e-tests module structure and FullLifecycleIT flow
+- [x] Add e2e-tests to root reactor and create its pom.xml
+- [x] Build and test loan-events, loan-api, notification service
+- [ ] Summarize issues and solutions in a table
+- [-] Run e2e-tests verify
+
+---
+
+```bash
+cd /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs && mvn -q -pl e2e-tests -am verify
+```
+
+```
+WARNING: A Java agent has been loaded dynamically (/Users/tazabreu/.m2/repository/net/bytebuddy/byte-buddy-agent/1.14.19/byte-buddy-agent-1.14.19.jar)                                                                
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning                                                                                                      
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information                                                                                                     
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended                                                                                     
+01:55:51.473 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.example.loan.api.web.LoanApiControllerTest]: LoanApiControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.                                                                                            
+01:55:51.604 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.example.loan.api.LoanApiApplication for test class com.example.loan.api.web.LoanApiControllerTest                                                                                         
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.3)
+
+{"@timestamp":"2025-09-11T01:55:51.97743-03:00","@version":"1","message":"HV000001: Hibernate Validator 8.0.1.Final","logger_name":"org.hibernate.validator.internal.util.Version","thread_name":"background-preinit","level":"INFO","level_value":20000,"service":"loan-api"}                                                   
+{"@timestamp":"2025-09-11T01:55:51.99684-03:00","@version":"1","message":"Starting LoanApiControllerTest using Java 21.0.1 with PID 40440 (started by tazabreu in /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/loan-api)","logger_name":"com.example.loan.api.web.LoanApiControllerTest","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                      
+{"@timestamp":"2025-09-11T01:55:51.997586-03:00","@version":"1","message":"No active profile set, falling back to 1 default profile: \"default\"","logger_name":"com.example.loan.api.web.LoanApiControllerTest","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                   
+{"@timestamp":"2025-09-11T01:55:52.67278-03:00","@version":"1","message":"Initializing Spring TestDispatcherServlet ''","logger_name":"org.springframework.boot.test.mock.web.SpringBootMockServletContext","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                        
+{"@timestamp":"2025-09-11T01:55:52.673097-03:00","@version":"1","message":"Initializing Servlet ''","logger_name":"org.springframework.test.web.servlet.TestDispatcherServlet","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                                     
+{"@timestamp":"2025-09-11T01:55:52.674122-03:00","@version":"1","message":"Completed initialization in 0 ms","logger_name":"org.springframework.test.web.servlet.TestDispatcherServlet","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                            
+{"@timestamp":"2025-09-11T01:55:52.685409-03:00","@version":"1","message":"Started LoanApiControllerTest in 1.035 seconds (process running for 3.387)","logger_name":"com.example.loan.api.web.LoanApiControllerTest","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                              
+{"@timestamp":"2025-09-11T01:55:52.824832-03:00","@version":"1","message":"Could not detect default configuration classes for test class [com.example.loan.api.web.LoanApiControllerValidationTest]: LoanApiControllerValidationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.","logger_name":"org.springframework.test.context.support.AnnotationConfigContextLoaderUtils","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                     
+{"@timestamp":"2025-09-11T01:55:52.829536-03:00","@version":"1","message":"Found @SpringBootConfiguration com.example.loan.api.LoanApiApplication for test class com.example.loan.api.web.LoanApiControllerValidationTest","logger_name":"org.springframework.boot.test.context.SpringBootTestContextBootstrapper","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                            
+{"@timestamp":"2025-09-11T01:55:52.849333-03:00","@version":"1","message":"Could not detect default configuration classes for test class [com.example.loan.api.web.GlobalExceptionHandlerTest]: GlobalExceptionHandlerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.","logger_name":"org.springframework.test.context.support.AnnotationConfigContextLoaderUtils","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                               
+{"@timestamp":"2025-09-11T01:55:52.853198-03:00","@version":"1","message":"Found @SpringBootConfiguration com.example.loan.api.LoanApiApplication for test class com.example.loan.api.web.GlobalExceptionHandlerTest","logger_name":"org.springframework.boot.test.context.SpringBootTestContextBootstrapper","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                 
+{"@timestamp":"2025-09-11T01:55:52.87411-03:00","@version":"1","message":"Could not detect default configuration classes for test class [com.example.loan.api.LoanApiApplicationTests]: LoanApiApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.","logger_name":"org.springframework.test.context.support.AnnotationConfigContextLoaderUtils","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                          
+{"@timestamp":"2025-09-11T01:55:52.8789-03:00","@version":"1","message":"Found @SpringBootConfiguration com.example.loan.api.LoanApiApplication for test class com.example.loan.api.LoanApiApplicationTests","logger_name":"org.springframework.boot.test.context.SpringBootTestContextBootstrapper","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                          
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.3)
+
+{"@timestamp":"2025-09-11T01:55:52.904231-03:00","@version":"1","message":"Starting LoanApiApplicationTests using Java 21.0.1 with PID 40440 (started by tazabreu in /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/loan-api)","logger_name":"com.example.loan.api.LoanApiApplicationTests","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                     
+{"@timestamp":"2025-09-11T01:55:52.904449-03:00","@version":"1","message":"The following 1 profile is active: \"local\"","logger_name":"com.example.loan.api.LoanApiApplicationTests","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                              
+{"@timestamp":"2025-09-11T01:55:53.249947-03:00","@version":"1","message":"Bootstrapping Spring Data JPA repositories in DEFAULT mode.","logger_name":"org.springframework.data.repository.config.RepositoryConfigurationDelegate","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                 
+{"@timestamp":"2025-09-11T01:55:53.272964-03:00","@version":"1","message":"Finished Spring Data repository scanning in 18 ms. Found 2 JPA repository interfaces.","logger_name":"org.springframework.data.repository.config.RepositoryConfigurationDelegate","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                                                                  
+{"@timestamp":"2025-09-11T01:55:53.574907-03:00","@version":"1","message":"HHH000204: Processing PersistenceUnitInfo [name: default]","logger_name":"org.hibernate.jpa.internal.util.LogHelper","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                    
+{"@timestamp":"2025-09-11T01:55:53.612185-03:00","@version":"1","message":"HHH000412: Hibernate ORM core version 6.5.2.Final","logger_name":"org.hibernate.Version","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                                                
+{"@timestamp":"2025-09-11T01:55:53.63541-03:00","@version":"1","message":"HHH000026: Second-level cache disabled","logger_name":"org.hibernate.cache.internal.RegionFactoryInitiator","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                              
+{"@timestamp":"2025-09-11T01:55:53.732565-03:00","@version":"1","message":"No LoadTimeWeaver setup: ignoring JPA class transformer","logger_name":"org.springframework.orm.jpa.persistenceunit.SpringPersistenceUnitInfo","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                          
+{"@timestamp":"2025-09-11T01:55:53.749182-03:00","@version":"1","message":"HikariPool-1 - Starting...","logger_name":"com.zaxxer.hikari.HikariDataSource","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                                                          
+{"@timestamp":"2025-09-11T01:55:53.870987-03:00","@version":"1","message":"HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:loans user=SA","logger_name":"com.zaxxer.hikari.pool.HikariPool","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                 
+{"@timestamp":"2025-09-11T01:55:53.871946-03:00","@version":"1","message":"HikariPool-1 - Start completed.","logger_name":"com.zaxxer.hikari.HikariDataSource","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                                                     
+{"@timestamp":"2025-09-11T01:55:53.889371-03:00","@version":"1","message":"HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)","logger_name":"org.hibernate.orm.deprecation","thread_name":"main","level":"WARN","level_value":30000,"service":"loan-api"}                                                                          
+{"@timestamp":"2025-09-11T01:55:54.34359-03:00","@version":"1","message":"HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)","logger_name":"org.hibernate.engine.transaction.jta.platform.internal.JtaPlatformInitiator","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                                                     
+{"@timestamp":"2025-09-11T01:55:54.362204-03:00","@version":"1","message":"Initialized JPA EntityManagerFactory for persistence unit 'default'","logger_name":"org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                 
+{"@timestamp":"2025-09-11T01:55:54.952793-03:00","@version":"1","message":"spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning","logger_name":"org.springframework.boot.autoconfigure.orm.jpa.JpaBaseConfiguration$JpaWebConfiguration","thread_name":"main","level":"WARN","level_value":30000,"service":"loan-api"}                                                                                              
+{"@timestamp":"2025-09-11T01:55:55.020439-03:00","@version":"1","message":"Exception when initializing feature provider dev.openfeature.contrib.providers.flagd.FlagdProvider","logger_name":"dev.openfeature.sdk.ProviderRepository","thread_name":"Thread-3","level":"ERROR","level_value":40000,"stack_trace":"dev.openfeature.sdk.exceptions.GeneralError: Deadline exceeded. Condition did not complete within the 500 deadline\n\tat dev.openfeature.contrib.providers.flagd.resolver.common.Util.busyWaitAndCheck(Util.java:27)\n\tat dev.openfeature.contrib.providers.flagd.resolver.grpc.GrpcConnector.initialize(GrpcConnector.java:77)\n\tat dev.openfeature.contrib.providers.flagd.resolver.grpc.GrpcResolver.init(GrpcResolver.java:77)\n\tat dev.openfeature.contrib.providers.flagd.FlagdProvider.initialize(FlagdProvider.java:77)\n\tat dev.openfeature.sdk.ProviderRepository.initializeProvider(ProviderRepository.java:136)\n\tat dev.openfeature.sdk.ProviderRepository.lambda$prepareAndInitializeProvider$3(ProviderRepository.java:124)\n\tat java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)\n\tat java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.base/java.lang.Thread.run(Thread.java:1583)\n","service":"loan-api"}                                        
+{"@timestamp":"2025-09-11T01:55:55.338241-03:00","@version":"1","message":"Exposing 2 endpoints beneath base path '/actuator'","logger_name":"org.springframework.boot.actuate.endpoint.web.EndpointLinksResolver","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                                 
+{"@timestamp":"2025-09-11T01:55:55.362112-03:00","@version":"1","message":"[Channel<1>: (flagd:8013)] Failed to resolve name. status=Status{code=UNAVAILABLE, description=Unable to resolve host flagd, cause=java.lang.RuntimeException: java.net.UnknownHostException: flagd: nodename nor servname provided, or not known\n\tat io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)\n\tat io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)\n\tat io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.base/java.lang.Thread.run(Thread.java:1583)\nCaused by: java.net.UnknownHostException: flagd: nodename nor servname provided, or not known\n\tat java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Native Method)\n\tat java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:52)\n\tat java.base/java.net.InetAddress$PlatformResolver.lookupByName(InetAddress.java:1211)\n\tat java.base/java.net.InetAddress.getAddressesFromNameService(InetAddress.java:1828)\n\tat java.base/java.net.InetAddress$NameServiceAddresses.get(InetAddress.java:1139)\n\tat java.base/java.net.InetAddress.getAllByName0(InetAddress.java:1818)\n\tat java.base/java.net.InetAddress.getAllByName(InetAddress.java:1688)\n\tat io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)\n\tat io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)\n\t... 5 more\n}","logger_name":"io.grpc.internal.ManagedChannelImpl","thread_name":"grpc-default-executor-0","level":"WARN","level_value":30000,"service":"loan-api"}        
+{"@timestamp":"2025-09-11T01:55:55.371167-03:00","@version":"1","message":"event stream","logger_name":"dev.openfeature.contrib.providers.flagd.resolver.grpc.EventStreamObserver","thread_name":"grpc-default-executor-0","level":"WARN","level_value":30000,"stack_trace":"io.grpc.StatusRuntimeException: UNAVAILABLE: Unable to resolve host flagd\n\tat io.grpc.Status.asRuntimeException(Status.java:533)\n\tat io.grpc.stub.ClientCalls$StreamObserverToCallListenerAdapter.onClose(ClientCalls.java:481)\n\tat io.grpc.internal.DelayedClientCall$DelayedListener$3.run(DelayedClientCall.java:489)\n\tat io.grpc.internal.DelayedClientCall$DelayedListener.drainPendingCallbacks(DelayedClientCall.java:528)\n\tat io.grpc.internal.DelayedClientCall$1DrainListenerRunnable.runInContext(DelayedClientCall.java:317)\n\tat io.grpc.internal.ContextRunnable.run(ContextRunnable.java:37)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.base/java.lang.Thread.run(Thread.java:1583)\nCaused by: java.lang.RuntimeException: java.net.UnknownHostException: flagd: nodename nor servname provided, or not known\n\tat io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:223)\n\tat io.grpc.internal.DnsNameResolver.doResolve(DnsNameResolver.java:282)\n\tat io.grpc.internal.DnsNameResolver$Resolve.run(DnsNameResolver.java:318)\n\t... 3 common frames omitted\nCaused by: java.net.UnknownHostException: flagd: nodename nor servname provided, or not known\n\tat java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Native Method)\n\tat java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:52)\n\tat java.base/java.net.InetAddress$PlatformResolver.lookupByName(InetAddress.java:1211)\n\tat java.base/java.net.InetAddress.getAddressesFromNameService(InetAddress.java:1828)\n\tat java.base/java.net.InetAddress$NameServiceAddresses.get(InetAddress.java:1139)\n\tat java.base/java.net.InetAddress.getAllByName0(InetAddress.java:1818)\n\tat java.base/java.net.InetAddress.getAllByName(InetAddress.java:1688)\n\tat io.grpc.internal.DnsNameResolver$JdkAddressResolver.resolveAddress(DnsNameResolver.java:632)\n\tat io.grpc.internal.DnsNameResolver.resolveAddresses(DnsNameResolver.java:219)\n\t... 5 common frames omitted\n","service":"loan-api"}                                                        
+{"@timestamp":"2025-09-11T01:55:55.37878-03:00","@version":"1","message":"Started LoanApiApplicationTests in 2.497 seconds (process running for 6.081)","logger_name":"com.example.loan.api.LoanApiApplicationTests","thread_name":"main","level":"INFO","level_value":20000,"service":"loan-api"}                               
+01:55:58.048 [main] INFO org.testcontainers.images.PullPolicy -- Image pull policy will be performed by: DefaultPullPolicy()                                                                                          
+01:55:58.051 [main] INFO org.testcontainers.utility.ImageNameSubstitutor -- Image name substitution will be performed by: DefaultImageNameSubstitutor (composite of 'ConfigurationFileImageNameSubstitutor' and 'PrefixingImageNameSubstitutor')                                                                                 
+01:55:58.240 [main] INFO org.testcontainers.dockerclient.DockerClientProviderStrategy -- Loaded org.testcontainers.dockerclient.UnixSocketClientProviderStrategy from ~/.testcontainers.properties, will try it first 
+01:55:58.429 [main] INFO org.testcontainers.dockerclient.DockerClientProviderStrategy -- Found Docker environment with local Unix socket (unix:///var/run/docker.sock)                                                
+01:55:58.430 [main] INFO org.testcontainers.DockerClientFactory -- Docker host IP address is localhost
+01:55:58.441 [main] INFO org.testcontainers.DockerClientFactory -- Connected to docker: 
+  Server Version: 27.5.1
+  API Version: 1.47
+  Operating System: Docker Desktop
+  Total Memory: 11948 MB
+01:55:58.477 [main] INFO tc.testcontainers/ryuk:0.7.0 -- Pulling docker image: testcontainers/ryuk:0.7.0. Please be patient; this may take some time but only needs to be done once.                                  
+01:56:02.464 [main] INFO org.testcontainers.utility.RegistryAuthLocator -- Credential helper/store (docker-credential-desktop) does not have credentials for https://index.docker.io/v1/                              
+01:56:05.514 [docker-java-stream--1848282956] INFO tc.testcontainers/ryuk:0.7.0 -- Starting to pull image
+01:56:05.525 [docker-java-stream--1848282956] INFO tc.testcontainers/ryuk:0.7.0 -- Pulling image layers:  0 pending,  0 downloaded,  0 extracted, (0 bytes/0 bytes)                                                   
+01:56:06.670 [docker-java-stream--1848282956] INFO tc.testcontainers/ryuk:0.7.0 -- Pulling image layers:  2 pending,  1 downloaded,  0 extracted, (64 KB/? MB)                                                        
+01:56:06.794 [docker-java-stream--1848282956] INFO tc.testcontainers/ryuk:0.7.0 -- Pulling image layers:  1 pending,  2 downloaded,  0 extracted, (3 MB/? MB)                                                         
+01:56:06.810 [docker-java-stream--1848282956] INFO tc.testcontainers/ryuk:0.7.0 -- Pulling image layers:  0 pending,  3 downloaded,  0 extracted, (3 MB/6 MB)                                                         
+01:56:06.908 [docker-java-stream--1848282956] INFO tc.testcontainers/ryuk:0.7.0 -- Pulling image layers:  0 pending,  3 downloaded,  1 extracted, (5 MB/6 MB)                                                         
+01:56:06.977 [docker-java-stream--1848282956] INFO tc.testcontainers/ryuk:0.7.0 -- Pulling image layers:  0 pending,  3 downloaded,  2 extracted, (6 MB/6 MB)                                                         
+01:56:07.011 [docker-java-stream--1848282956] INFO tc.testcontainers/ryuk:0.7.0 -- Pulling image layers:  0 pending,  3 downloaded,  3 extracted, (6 MB/6 MB)                                                         
+01:56:07.020 [docker-java-stream--1848282956] INFO tc.testcontainers/ryuk:0.7.0 -- Pull complete. 3 layers, pulled in 1s (downloaded 6 MB at 6 MB/s)                                                                  
+01:56:07.020 [main] INFO tc.testcontainers/ryuk:0.7.0 -- Image testcontainers/ryuk:0.7.0 pull took PT8.542883S                                                                                                        
+01:56:07.035 [main] INFO tc.testcontainers/ryuk:0.7.0 -- Creating container for image: testcontainers/ryuk:0.7.0                                                                                                      
+01:56:07.108 [main] INFO tc.testcontainers/ryuk:0.7.0 -- Container testcontainers/ryuk:0.7.0 is starting: 08575150ffb5efec5a97b4470a9c326a6858fa168aff612b9710d2ce91204f81                                            
+01:56:07.318 [main] INFO tc.testcontainers/ryuk:0.7.0 -- Container testcontainers/ryuk:0.7.0 started in PT0.282861S                                                                                                   
+01:56:07.323 [main] INFO org.testcontainers.utility.RyukResourceReaper -- Ryuk started - will monitor and terminate Testcontainers containers on JVM exit                                                             
+01:56:07.323 [main] INFO org.testcontainers.DockerClientFactory -- Checking the system...
+01:56:07.324 [main] INFO org.testcontainers.DockerClientFactory -- ✔︎ Docker server version should be at least 1.6.0                                                                                                   
+01:56:07.324 [main] INFO tc.redpandadata/redpanda:latest -- Creating container for image: redpandadata/redpanda:latest                                                                                                
+01:56:07.352 [main] INFO tc.redpandadata/redpanda:latest -- Container redpandadata/redpanda:latest is starting: 106f9a0df59d8c08161e32f34d40a1387473250a1fd65540a7451bed122eca76                                      
+01:56:08.375 [main] INFO tc.redpandadata/redpanda:latest -- Container redpandadata/redpanda:latest started in PT1.050613S                                                                                             
+01:56:08.375 [main] INFO tc.postgres:16-alpine -- Creating container for image: postgres:16-alpine
+01:56:08.400 [main] INFO tc.postgres:16-alpine -- Container postgres:16-alpine is starting: ae39f0b90a4b3cde1ea5c87fd142ba98ff2187daa0f91dd3dab4849fa7bd94cb                                                          
+01:56:09.466 [main] INFO tc.postgres:16-alpine -- Container postgres:16-alpine started in PT1.090829S
+01:56:09.466 [main] INFO tc.postgres:16-alpine -- Container is started (JDBC URL: jdbc:postgresql://localhost:53166/test?loggerLevel=OFF)                                                                             
+[ERROR] Tests run: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 11.92 s <<< FAILURE! -- in com.example.loan.e2e.FullLifecycleIT                                                                               
+[ERROR] com.example.loan.e2e.FullLifecycleIT -- Time elapsed: 11.92 s <<< ERROR!
+java.lang.NoClassDefFoundError: com/example/loan/notification/LoanNotificationServiceApplication
+        at com.example.loan.e2e.FullLifecycleIT.startApps(FullLifecycleIT.java:54)
+        at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+        at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+Caused by: java.lang.ClassNotFoundException: com.example.loan.notification.LoanNotificationServiceApplication                                                                                                         
+        at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:641)
+        at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:188)
+        at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:526)
+        ... 3 more
+
+[ERROR] Errors: 
+[ERROR]   FullLifecycleIT.startApps:54 NoClassDefFound com/example/loan/notification/LoanNotificationServiceApplication                                                                                               
+[ERROR] Tests run: 1, Failures: 0, Errors: 1, Skipped: 0
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-failsafe-plugin:3.2.5:verify (default) on project e2e-tests:                                                                                            
+[ERROR] 
+[ERROR] Please refer to /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs/e2e-tests/target/failsafe-reports for the individual test results.                                                               
+[ERROR] Please refer to dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+[ERROR] 
+[ERROR] After correcting the problems, you can resume the build with the command
+[ERROR]   mvn <args> -rf :e2e-tests
+```
+
+---
+
+<think><details><summary>Thought Process</summary>**Planning project builds and tests**
+
+I need to finalize the response by building all projects and running both unit and integration tests. If there are issues, I’ll output a list of them along with possible solutions in a clean table. The user asked for this specifically. Previously, I attempted to run the full reactor but encountered errors. I fixed those by adjusting types and creating a missing test file. However, the latest run failed due to a `NoClassDefFoundError`.
+**Analyzing classpath issues**
+
+It looks like, at runtime, the classpath isn't including the loan-notification-service classes, which is causing issues. During compile time, I see the classes are included, but for the failsafe plugin, it might only be using the test classpath. Since loan-notification-service is a test scope dependency, we need to adjust how classes are included. I should probably declare the module as a test-jar or use the maven-dependency-plugin. The application classes need to be on the test runtime classpath, but I'm getting a class not found error.
+**Examining packaging issues**
+
+It seems like the issue might stem from how the loan-notification-service jar is packaged by the Spring Boot plugin, which nests the main class inside a nested jar. The e2e-tests are the only ones relying on this particular jar structure created by the Spring Boot repackage. In the loan-notification-service's `pom.xml`, the Spring Boot plugin generates a fat jar. The nested classes in `BOOT-INF/classes` aren't accessible like standard classpath jars. When Maven uses the original jar as a dependency for another module, it doesn't consider the repackaging changes.
+**Identifying dependency issues**
+
+The problem arises because the Spring Boot fat jar cannot be used as a dependency since its classes are located under `BOOT-INF/classes`, which aren't included in the classpath. This likely leads to the NoClassDefFoundError. A common solution is to avoid repackaging modules that are intended as dependencies. Instead, I should skip repackaging for those modules or configure a "classifier" to create a separate executable jar while keeping the regular thin jar as the main artifact. The loan-api and loan-notification-service poms likely have similar configurations.
+**Summarizing build and test results**
+
+I built the core modules successfully, but the E2E integration tests failed due to a classpath issue, specifically a NoClassDefFoundError for the LoanNotificationServiceApplication. To address this, I’ll create a table outlining the detected issues and suggested fixes, including configuring the Spring Boot Maven plugin properly. The commands to rerun the tests after fixes will be provided. I also need to update the status of tasks in the todo list. Let's put everything together!
+**Finalizing test configuration and updates**
+
+I can propose a configuration change for the tests using the maven-dependency-plugin to include module classes, although it isn’t straightforward. I also need to address the Kafka port issue, which isn't failing at the moment, and noise from the flagd provider in logs. We should suggest setting an environment variable to disable initialization. Next, I’ll update the todos to mark various tasks as completed, and I need to reconcile the todo list before wrapping things up. I'll make one more call to update the list before the final message.</details></think>
+
+---
+
+I ran builds and tests across all modules. Core modules passed; the e2e integration test failed with a classpath issue due to Spring Boot fat jars. I’ll mark tasks complete and share a concise issues table and how to fix/redo the run.
+
+---
+
+## Todo List
+
+- [!] Run E2E integration tests for e2e-tests module
+- [x] Diagnose and report any test failures
+- [ ] Explain e2e-tests module structure and FullLifecycleIT flow
+- [x] Add e2e-tests to root reactor and create its pom.xml
+- [x] Build and test loan-events, loan-api, notification service
+- [x] Summarize issues and solutions in a table
+- [x] Run e2e-tests verify
+
+---
+
+- Built all modules and ran tests. Core modules passed; e2e integration failed. Now I’ll summarize issues and fixes.
+
+### Issues found and fixes
+
+| Module | Type | What failed | Evidence | Probable cause | Quick fix | Longer-term improvement |
+|---|---|---|---|---|---|---|
+| loan-events | Unit | Passed | Reactor success | — | — | — |
+| loan-api | Unit | Passed (with warnings) | Flagd provider errors in logs | No running `flagd`; SDK times out | Ignore logs or disable provider in tests via `OPENFEATURE_PROVIDER=NoOpProvider` or property | Add test profile to disable feature flags |
+| loan-notification-service | Unit | Passed | Reactor success | — | — | — |
+| e2e-tests | Integration | NoClassDefFoundError for `LoanNotificationServiceApplication` | Failsafe error: class not found at test startup | Spring Boot apps are not on test runtime classpath as classes; the module depends on their jars with scope test, but only the plain classes dir was on the classpath during `test-compile`; during failsafe fork, the boot app main class isn’t resolved | Add test-scoped dependency on `loan-notification-service` and `loan-api` with classifier `tests` or depend on their classes dirs via maven-dependency-plugin copy; simpler: add `<dependencies>` with `<type>jar</type>` is fine but ensure Failsafe fork includes them; quickest: add both modules as `test` deps (already present) and add `-Dmaven.test.skip=false` run; or create a small “apps” test-jar or move those applications into `loan-apps` common test-jar | Start the apps as separate SpringBootTest contexts in the same module, or run them as Docker containers for better isolation; or publish “test-jar” from services for re-use |
+
+Minimal actionable fix to unblock:
+- Add test-jar packaging for the two service modules so the application classes are resolvable in forks.
+
+Steps:
+1) In `loan-api/pom.xml` and `loan-notification-service/pom.xml`, add:
+```xml
+<build>
+  <plugins>
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-jar-plugin</artifactId>
+      <version>3.3.0</version>
+      <executions>
+        <execution>
+          <goals>
+            <goal>test-jar</goal>
+          </goals>
+        </execution>
+      </executions>
+    </plugin>
+  </plugins>
+</build>
+```
+2) In `e2e-tests/pom.xml`, depend on those test-jars:
+```xml
+<dependency>
+  <groupId>com.example</groupId>
+  <artifactId>loan-api</artifactId>
+  <version>${project.version}</version>
+  <type>test-jar</type>
+  <scope>test</scope>
+</dependency>
+<dependency>
+  <groupId>com.example</groupId>
+  <artifactId>loan-notification-service</artifactId>
+  <version>${project.version}</version>
+  <type>test-jar</type>
+  <scope>test</scope>
+</dependency>
+```
+3) Run:
+```bash
+mvn -q -pl e2e-tests -am clean verify
+```
+
+Notes:
+- Alternatively, don’t rely on reusing other modules’ main classes; keep a tiny test-only `@SpringBootApplication` in `e2e-tests` that imports the services’ auto-configurations via classpath dependencies. This avoids test-jar coupling.
+- The Kafka container binds host port 29092: ensure it’s free when running.
+
+- All core modules passed; only e2e failed due to missing app classes at runtime. The above change will make them visible to the failsafe fork so the integration test can boot both apps and proceed.
+
+---
+
+_**User (2025-09-11 02:20Z)**_
+
+Implement the fix that you believe will make the most sense / is most highquality
+
+---
+
+_**Assistant**_
+
+<think><details><summary>Thought Process</summary>**Investigating classpath issues**
+
+I'm trying to figure out a problem with the classpath related to the LoanNotificationServiceApplication class. It seems it's missing, but the LoanApiApplication class isn't affected. Initially, we faced compile errors due to "class not found," but we fixed the classpath using target/classes. Now, the failsafe error at runtime suggests that the e2e-tests depend on the loan-notification-service, but maybe the jar is repackaged incorrectly. I need to check the packaging settings in the loan-notification-service's pom.xml for confirmation.</details></think>
+
+---
+
+I'll open the service poms to confirm jar packaging and whether a test-jar is produced, then implement the test-jar approach in both modules, update e2e-tests deps, and rerun the e2e suite.
+
+---
+
+Read file: undefined
+
+---
+
+## Todo List
+
+- [!] Run E2E integration tests for e2e-tests module
+- [x] Diagnose and report any test failures
+- [!] Explain e2e-tests module structure and FullLifecycleIT flow
+- [x] Add e2e-tests to root reactor and create its pom.xml
+- [x] Build and test loan-events, loan-api, notification service
+- [x] Summarize issues and solutions in a table
+- [x] Run e2e-tests verify
+- [-] Add test-jar executions to loan-api and loan-notification-service
+- [ ] Update e2e-tests to depend on services test-jar
+- [ ] Run full build and e2e verify
+
+---
+
+
+
+---
+
+
+
+---
+
+## Todo List
+
+- [!] Run E2E integration tests for e2e-tests module
+- [x] Diagnose and report any test failures
+- [!] Explain e2e-tests module structure and FullLifecycleIT flow
+- [x] Add e2e-tests to root reactor and create its pom.xml
+- [x] Build and test loan-events, loan-api, notification service
+- [x] Summarize issues and solutions in a table
+- [x] Run e2e-tests verify
+- [x] Add test-jar executions to loan-api and loan-notification-service
+- [-] Update e2e-tests to depend on services test-jar
+- [ ] Run full build and e2e verify
+
+---
+
+
+
+---
+
+## Todo List
+
+- [!] Run E2E integration tests for e2e-tests module
+- [x] Diagnose and report any test failures
+- [!] Explain e2e-tests module structure and FullLifecycleIT flow
+- [x] Add e2e-tests to root reactor and create its pom.xml
+- [x] Build and test loan-events, loan-api, notification service
+- [x] Summarize issues and solutions in a table
+- [x] Run e2e-tests verify
+- [x] Add test-jar executions to loan-api and loan-notification-service
+- [x] Update e2e-tests to depend on services test-jar
+- [-] Run full build and e2e verify
+
+---
+
+```bash
+cd /Users/tazabreu/@Projects/scratchpad/loan-service-genai-labs && mvn -q clean verify
+```
+
+---
+
+
+
+---
+

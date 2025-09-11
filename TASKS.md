@@ -163,3 +163,26 @@ Flagd <-> OpenFeature (loan-api)
 - What is the exact prompt/problem statement?
 - Target environment (Docker? Cloud runtime?) and data sources?
 - Any performance/SLO requirements?
+
+## Future improvements, as of 11 Sep 2025
+- Outbox reliability
+  - Add in-flight marker, attempt counter/backoff, sent_at; periodic cleanup.
+  - Use DB advisory locks to avoid concurrent pollers double-sending.
+- Messaging and DLQ
+  - Dead-letter publishing with recoverer; poison-pill detection and metrics.
+  - Ensure partitioning by loan id for ordering guarantees.
+- API and domain
+  - Idempotency for mutating operations (`Idempotency-Key`).
+  - Read endpoints (GET by id/list with pagination); standard problem+json errors.
+- Observability
+  - Ship OTel Java agent by default in Compose; add domain metrics (e.g., loans_by_status, outbox_batch_size).
+  - Preload Grafana dashboards; wire Loki/Tempo datasources.
+- Data and schema
+  - Versioned event schema (Avro/JSON Schema/Protobuf) with registry; codegen.
+  - Additional DB indexes for common filters (status, customer_id).
+- Testing
+  - Expand unit/integration to ≥80%; concurrency tests for poller; consumer error-path tests.
+  - PITest mutation coverage ≥80% on business logic.
+- Delivery
+  - GraalVM native profiles and Dockerfiles; multi-arch builds and image scanning.
+  - Kubernetes manifests (ConfigMaps/Secrets/Deployments/Services) with probes.

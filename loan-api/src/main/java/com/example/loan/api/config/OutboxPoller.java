@@ -15,6 +15,7 @@ import java.util.List;
 
 @Component
 @EnableScheduling
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name = "outbox.enabled", havingValue = "true", matchIfMissing = true)
 public class OutboxPoller {
     private static final Logger log = LoggerFactory.getLogger(OutboxPoller.class);
     private final OutboxEventRepository repo;
@@ -39,4 +40,3 @@ public class OutboxPoller {
         }
     }
 }
-

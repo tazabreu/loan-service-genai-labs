@@ -33,25 +33,24 @@ public class LoanApiController {
     }
 
     @PostMapping("/{id}/approve")
-    public Loan approve(@PathVariable UUID id, @RequestHeader(name = "X-User", required = false, defaultValue = "backoffice") String user) {
+    public Loan approve(@PathVariable("id") UUID id, @RequestHeader(name = "X-User", required = false, defaultValue = "backoffice") String user) {
         return service.approve(id, user);
     }
 
     @PostMapping("/{id}/reject")
-    public Loan reject(@PathVariable UUID id, @RequestHeader(name = "X-User", required = false, defaultValue = "backoffice") String user) {
+    public Loan reject(@PathVariable("id") UUID id, @RequestHeader(name = "X-User", required = false, defaultValue = "backoffice") String user) {
         return service.reject(id, user, "manual review");
     }
 
     @PostMapping("/{id}/contract")
-    public Loan contract(@PathVariable UUID id) { return service.contract(id); }
+    public Loan contract(@PathVariable("id") UUID id) { return service.contract(id); }
 
     @PostMapping("/{id}/disburse")
-    public Loan disburse(@PathVariable UUID id) { return service.disburse(id); }
+    public Loan disburse(@PathVariable("id") UUID id) { return service.disburse(id); }
 
     @PostMapping("/{id}/pay")
-    public Loan pay(@PathVariable UUID id, @RequestBody @Valid PaymentRequest req) { return service.pay(id, req.amount()); }
+    public Loan pay(@PathVariable("id") UUID id, @RequestBody @Valid PaymentRequest req) { return service.pay(id, req.amount()); }
 
     @GetMapping("/healthz")
     public Map<String, String> health() { return Map.of("status", "ok"); }
 }
-

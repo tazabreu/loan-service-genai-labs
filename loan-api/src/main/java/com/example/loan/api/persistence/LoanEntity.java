@@ -9,6 +9,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "loan")
 public class LoanEntity {
+    public LoanEntity() {}
     @Id
     private UUID id;
     private BigDecimal amount;
@@ -58,4 +59,3 @@ public class LoanEntity {
     public String getCustomerId() { return customerId; }
     public void setCustomerId(String customerId) { this.customerId = customerId; }
 }
-

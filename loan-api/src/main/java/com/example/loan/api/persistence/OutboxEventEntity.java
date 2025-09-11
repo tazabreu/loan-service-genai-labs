@@ -7,6 +7,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "outbox_event")
 public class OutboxEventEntity {
+    public OutboxEventEntity() {}
     @Id
     private UUID id;
     private String topic;
@@ -31,4 +32,3 @@ public class OutboxEventEntity {
     public boolean isSent() { return sent; }
     public void setSent(boolean sent) { this.sent = sent; }
 }
-

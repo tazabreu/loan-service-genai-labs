@@ -35,6 +35,8 @@ services:
       - "3200:3200"
   prometheus:
     image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
     ports:
       - "9090:9090"
   grafana:
@@ -59,6 +61,7 @@ services:
       DATABASE_PASSWORD: postgres
       SPRING_KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
       OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4318
+      OTEL_SERVICE_NAME: loan-api
     depends_on:
       - postgres
       - redpanda
@@ -73,6 +76,7 @@ services:
       PORT: 8082
       SPRING_KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
       OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4318
+      OTEL_SERVICE_NAME: loan-notification-service
     depends_on:
       - redpanda
     ports:

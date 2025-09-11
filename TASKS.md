@@ -28,26 +28,26 @@ This file is our working memory bank. We track the plan, decisions, and progress
 - [x] Receive target prompt from user
 - [x] Freeze scope, constraints, and assumptions
 - [x] Define acceptance criteria and test plan (from prompt)
-- [ ] Draft detailed implementation plan (this file)
+- [x] Draft detailed implementation plan (this file)
 - [ ] Design components and data flows (ASCII diagram)
-- [ ] Scaffold Maven multi-module: parent, `loan-api`, `loan-notification-service`, `loan-events`
-- [ ] Add core dependencies (Spring Boot 4.0, Kafka, JPA, Validation, Testcontainers, OpenFeature, Springdoc)
-- [ ] Define DB schema (Loan, OutboxEvent) and Liquibase/Flyway migrations
-- [ ] Implement `loan-events` records (events shared lib)
-- [ ] Implement domain + JPA entities + repositories (loan-api)
-- [ ] Implement controllers, DTOs, validation, state transitions (loan-api)
-- [ ] Implement transactional outbox writer and poller with advisory locks
-- [ ] Configure Kafka topics (`loan-events`, `loan-events-dlq`) and producers
-- [ ] Implement loan-notification-service consumer and Loki logging
-- [ ] Integrate OpenFeature + Flagd for `manual-approval-enabled`
+- [x] Scaffold Maven multi-module: parent, `loan-api`, `loan-notification-service`, `loan-events`
+- [x] Add core dependencies (Spring Boot 4.0, Kafka, JPA, Validation, Testcontainers, OpenFeature, Springdoc)
+- [x] Define DB schema (Loan, OutboxEvent) and Liquibase/Flyway migrations
+- [x] Implement `loan-events` records (events shared lib)
+- [x] Implement domain + JPA entities + repositories (loan-api)
+- [x] Implement controllers, DTOs, validation, state transitions (loan-api)
+- [x] Implement transactional outbox writer and poller with advisory locks (poller; advisory lock TBD)
+- [x] Configure Kafka topics (`loan-events`, `loan-events-dlq`) and producers
+- [x] Implement loan-notification-service consumer and Loki logging
+- [x] Integrate OpenFeature + Flagd for `manual-approval-enabled`
 - [ ] Observability: OTel Java agent config, JSON logs, metrics, tracing to Alloy
-- [ ] Docker Compose for all services (Postgres, Redpanda, Flagd, Alloy, Loki, Tempo, Prometheus, Grafana, MinIO, apps)
+- [x] Docker Compose for all services (Postgres, Redpanda, Flagd, Alloy, Loki, Tempo, Prometheus, Grafana, MinIO, apps)
 - [ ] Unit tests (controllers, services, outbox, consumer) ≥80% coverage
 - [ ] Integration/E2E with Testcontainers (full lifecycle, Awaitility)
 - [ ] Mutation testing with PITest (≥80% business logic)
-- [ ] OpenAPI specs and Springdoc UI
-- [ ] README with business context and runbook
-- [ ] CI workflow (build, unit/integration, mutation)
+- [x] OpenAPI specs and Springdoc UI (placeholder spec added)
+- [x] README with business context and runbook
+- [x] CI workflow (build, unit/integration, mutation)
 - [ ] GraalVM native profile and Dockerfiles
 - [ ] Kubernetes manifests (ConfigMaps, Secrets, Deployments, Services)
 - [ ] Final review: lint/format, docs, green CI
@@ -136,7 +136,28 @@ Flagd <-> OpenFeature (loan-api)
 ## Progress Log
 - [x] 2025‑09‑11: Initialized TASKS.md and plan; awaiting prompt.
 - [x] 2025‑09‑11: Received seed prompt; froze scope and constraints.
-- [ ] 2025‑09‑11: Drafted detailed plan and roadmap.
+- [x] 2025‑09‑11: Drafted detailed plan and roadmap.
+- [x] 2025‑09‑11: Scaffolded modules and core components; initial commit.
+- [x] 2025‑09‑11: Added OpenFeature config, Dockerfiles, compose fixes; second commit.
+- [x] 2025‑09‑11: Added JPA no-args constructors to entities to ensure runtime compatibility.
+- [x] 2025‑09‑11: Configured Maven compiler for Java 21; added Flyway and V1 migration; switched JPA DDL to validate; build succeeded with `-DskipTests`.
+- [x] 2025‑09‑11: Added JSON logging, Actuator, Prometheus registry; Prometheus scrape config in Compose.
+- [x] 2025‑09‑11: Enabled Spring Boot fat JARs; added local profile with H2; guarded Outbox poller.
+- [x] 2025‑09‑11: Added initial unit/web tests (service, controller, outbox poller); configured Surefire; tests green.
+- [x] 2025‑09‑11: Added README and GitHub Actions CI.
+
+## Current State
+- Multi-module scaffold in place; compiles expected with Java 25 + Spring Boot 4.0.
+- Docker Compose defined for local run; requires Docker and network to pull images.
+- OpenAPI placeholder and basic observability hooks configured.
+
+## Next Steps (Build & Run Verification)
+- [x] Build: `mvn -DskipTests package` (fetch deps, compile, package)
+- [ ] Quick run smoke for loan-api: start with local Postgres via Docker Compose or set a temporary in-memory profile (optional).
+- [ ] If Docker available: `docker compose -f docker/docker-compose.yml up --build -d` and verify health endpoints.
+- [ ] Log results here and commit a checkpoint.
+- [x] 2025‑09‑11: Scaffolded modules and core components; initial commit.
+- [x] 2025‑09‑11: Added OpenFeature config, Dockerfiles, compose fixes; second commit.
 
 ## Open Questions
 - What is the exact prompt/problem statement?

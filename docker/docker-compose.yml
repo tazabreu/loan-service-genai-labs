@@ -49,7 +49,9 @@ services:
     ports:
       - "9000:9000"
   loan-api:
-    build: ../loan-api
+    build:
+      context: ..
+      dockerfile: loan-api/Dockerfile
     environment:
       PORT: 8081
       DATABASE_URL: jdbc:postgresql://postgres:5432/loans
@@ -64,7 +66,9 @@ services:
     ports:
       - "8081:8081"
   loan-notification-service:
-    build: ../loan-notification-service
+    build:
+      context: ..
+      dockerfile: loan-notification-service/Dockerfile
     environment:
       PORT: 8082
       SPRING_KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
@@ -73,4 +77,3 @@ services:
       - redpanda
     ports:
       - "8082:8082"
-

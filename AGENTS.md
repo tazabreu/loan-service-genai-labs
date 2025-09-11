@@ -40,6 +40,11 @@ Prefer adding thin `make` targets to standardize local workflows.
   - `🏗️ build(ci): add Maven + PITest workflow`
 - Keep subject ≤72 chars; body explains rationale and impacts.
 
+### Git Identity
+- Use this repo-local identity for commits:
+  - `git config user.name "Tassio Abreu (Codex Agent)"`
+  - `git config user.email "tazabreu@gmail.com"`
+
 ## 12-Factor App Guidelines
 - Config via env vars: no secrets in repo. Ship `.env.example` (no values). Read `PORT`, `DATABASE_URL`, `REDIS_URL`; use `dotenv` only in dev.
 - Dependencies declared/isolated: Python uses `pyproject.toml` + lock (e.g., pip-tools/uv); Node uses `package-lock.json`. Install with `pip install -e .[prod]` or `npm ci`.

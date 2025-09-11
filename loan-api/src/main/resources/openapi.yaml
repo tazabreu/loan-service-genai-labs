@@ -1,0 +1,39 @@
+openapi: 3.0.3
+info:
+  title: Loan API
+  version: 0.1.0
+paths:
+  /loans/simulate:
+    post:
+      summary: Simulate a loan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoanSimulationRequest'
+      responses:
+        '201':
+          description: Created
+  /loans/{id}/approve:
+    post:
+      summary: Approve a loan
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200': { description: OK }
+components:
+  schemas:
+    LoanSimulationRequest:
+      type: object
+      properties:
+        amount: { type: number, format: decimal }
+        termMonths: { type: integer }
+        interestRate: { type: number, format: decimal }
+        customerId: { type: string }
+      required: [ amount, termMonths, interestRate, customerId ]
+

@@ -1,0 +1,22 @@
+name: CI
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Build
+        run: mvn -B -q -DskipTests package
+      - name: Unit + Integration Tests
+        run: mvn -B -q test
+      - name: Mutation Tests
+        run: mvn -q -pl loan-api pitest:mutationCoverage || true
+

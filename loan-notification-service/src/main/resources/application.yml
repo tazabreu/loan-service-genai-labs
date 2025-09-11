@@ -1,0 +1,17 @@
+server:
+  port: ${PORT:8082}
+
+spring:
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:loan-notification-service}] traceId=%X{trace_id:-} spanId=%X{span_id:-} %c{1} - %m%n"
+

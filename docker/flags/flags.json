@@ -1,0 +1,11 @@
+{
+  "$schema": "https://raw.githubusercontent.com/open-feature/schemas/main/json/flagd-definitions.json",
+  "flags": {
+    "manual-approval-enabled": {
+      "state": "ENABLED",
+      "variants": {"on": true, "off": false},
+      "defaultVariant": "on"
+    }
+  }
+}
+

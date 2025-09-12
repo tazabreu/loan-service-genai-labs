@@ -13,7 +13,6 @@
     <module>loan-events</module>
     <module>loan-api</module>
     <module>loan-notification-service</module>
-    <module>e2e-tests</module>
   </modules>
 
   <properties>

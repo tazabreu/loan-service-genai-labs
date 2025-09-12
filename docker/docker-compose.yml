@@ -30,12 +30,25 @@ services:
       - "8013:8013"
   alloy:
     image: grafana/alloy:latest
+    command: ["run", "--server.http.listen-addr=0.0.0.0:12345", "--storage.path=/var/lib/alloy", 
+              "--config.file=/etc/alloy/config.alloy"]
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
     ports:
-      - "4318:4318"
+      - "4318:4318"  # OTLP/HTTP receiver for traces
+      - "4317:4317"  # OTLP/gRPC receiver for traces
   loki:
     image: grafana/loki:2.9.3
     ports:
       - "3100:3100"
+  promtail:
+    image: grafana/promtail:2.9.3
+    volumes:
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./promtail-config.yml:/etc/promtail/config.yml:ro
+    command: ["--config.file=/etc/promtail/config.yml"]
   tempo:
     image: grafana/tempo:2.5.0
     ports:
@@ -50,13 +63,10 @@ services:
     image: grafana/grafana:latest
     ports:
       - "3000:3000"
-  minio:
-    image: bitnami/minio:latest
-    environment:
-      MINIO_ROOT_USER: minio
-      MINIO_ROOT_PASSWORD: minio123
-    ports:
-      - "9000:9000"
+    volumes:
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ../dashboards:/var/lib/grafana/dashboards:ro
   loan-api:
     build:
       context: ..
@@ -68,7 +78,11 @@ services:
       DATABASE_PASSWORD: postgres
       SPRING_KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
       OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4318
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
       OTEL_SERVICE_NAME: loan-api
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=local
     depends_on:
       - postgres
       - redpanda
@@ -83,7 +97,11 @@ services:
       PORT: 8082
       SPRING_KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
       OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4318
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
       OTEL_SERVICE_NAME: loan-notification-service
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=local
     depends_on:
       - redpanda
     ports:

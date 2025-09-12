@@ -4,6 +4,7 @@ import com.example.loan.api.persistence.LoanEntity;
 import com.example.loan.api.persistence.LoanRepository;
 import com.example.loan.events.model.LoanStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -26,7 +27,7 @@ class LoanServiceStateTest {
     void setUp() {
         repo = mock(LoanRepository.class);
         outbox = mock(OutboxWriter.class);
-        service = new LoanService(repo, outbox, new ObjectMapper().findAndRegisterModules(), new BigDecimal("10000"));
+        service = new LoanService(repo, outbox, new ObjectMapper().findAndRegisterModules(), new BigDecimal("10000"), new SimpleMeterRegistry());
         when(repo.save(any())).thenAnswer(inv -> inv.getArgument(0));
     }
 
@@ -80,4 +81,3 @@ class LoanServiceStateTest {
         return e;
     }
 }
-

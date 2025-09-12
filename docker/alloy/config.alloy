@@ -1,0 +1,30 @@
+otelcol.receiver.otlp "default" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+}
+
+otelcol.processor.batch "default" {}
+
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "tempo:4317"
+    tls {
+      insecure = true
+    }
+  }
+}
+
+otelcol.service "otel" {
+  pipelines {
+    traces = [
+      otelcol.receiver.otlp.default.output,
+      otelcol.processor.batch.default.input,
+      otelcol.exporter.otlp.tempo.input,
+    ]
+  }
+}
+

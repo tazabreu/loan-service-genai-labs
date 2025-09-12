@@ -40,10 +40,16 @@ This file is our working memory bank. We track the plan, decisions, and progress
 - [x] Configure Kafka topics (`loan-events`, `loan-events-dlq`) and producers
 - [x] Implement loan-notification-service consumer and Loki logging
 - [x] Integrate OpenFeature + Flagd for `manual-approval-enabled`
+- [x] E2E (TypeScript): Compose-backed BDD-style tests asserting API → DB → Kafka → logs
 - [ ] Observability: OTel Java agent config, JSON logs, metrics, tracing to Alloy
+  - [x] Wire OpenTelemetry Java agent into app images
+  - [x] Add Alloy config to receive OTLP and forward to Tempo
+  - [x] Add Promtail to ship container logs to Loki
+  - [x] Provision Grafana datasources (Prometheus, Loki, Tempo) and starter dashboard
 - [x] Docker Compose for all services (Postgres, Redpanda, Flagd, Alloy, Loki, Tempo, Prometheus, Grafana, MinIO, apps)
 - [ ] Unit tests (controllers, services, outbox, consumer) ≥80% coverage
 - [ ] Integration/E2E with Testcontainers (full lifecycle, Awaitility)
+  - [x] Remove duplicate Java E2E module and lifecycle IT; keep focused module ITs
 - [ ] Mutation testing with PITest (≥80% business logic)
 - [x] OpenAPI specs and Springdoc UI (placeholder spec added)
 - [x] README with business context and runbook
@@ -51,6 +57,70 @@ This file is our working memory bank. We track the plan, decisions, and progress
 - [ ] GraalVM native profile and Dockerfiles
 - [ ] Kubernetes manifests (ConfigMaps, Secrets, Deployments, Services)
 - [ ] Final review: lint/format, docs, green CI
+
+### E2E and Testing Roadmap (new)
+- [ ] Split TS e2e into focused specs per scenario (simulate, approve/reject, contract, disburse, pay)
+- [ ] Negative-path e2e: invalid transitions, overpayment, zero/negative amounts, unknown id (404), validation errors
+- [ ] Manual-approval path e2e by toggling Flagd; assert PENDING_APPROVAL and approve/reject flows
+- [ ] Event ordering e2e: ensure monotonic state transitions per loan id (single partition key)
+- [ ] Idempotency e2e: repeat POSTs with `Idempotency-Key` (after feature added)
+- [ ] Make TS e2e read logs via Loki API instead of `docker compose logs` for portability
+- [ ] Java Testcontainers: add CDC-style message contract tests for `loan-events` payloads
+- [ ] Java ITs: add Awaitility-based DB/Kafka assertions and consumer error path tests
+
+### CI/CD Enhancements (new)
+- [ ] Add GitHub Actions job to run TS e2e against a compose stack (services: Postgres, Redpanda, Flagd)
+- [ ] Add job to run `e2e-tests` (JUnit + Testcontainers) with Docker available on runner
+- [ ] Publish multi-arch Docker images on tags/merge to main; use buildx cache
+- [ ] Add vulnerability scanning (Trivy or Grype) for built images
+- [ ] Cache Maven/Node deps and Docker layers for faster CI
+
+### Observability Roadmap (new)
+- [ ] Bundle and mount OpenTelemetry Java agent in Compose; set `JAVA_TOOL_OPTIONS=-javaagent:/otel/opentelemetry-javaagent.jar`
+  - [x] Implemented via Dockerfiles + Alloy pipeline to Tempo
+- [ ] Configure sampling and resource attributes (service.name, env) for both services
+- [ ] Provision Grafana datasources (Prometheus, Loki, Tempo) and import starter dashboards under `dashboards/`
+  - [x] Added provisioning and a starter overview dashboard
+- [ ] Add domain metrics: loans_by_status, outbox_batch_size, outbox_failures_total
+- [ ] Correlate logs with trace/span ids end-to-end; add trace id to outgoing Kafka headers
+- [ ] Add `/readyz` with checks for DB and Kafka connectivity
+
+### Messaging & Outbox Reliability (new)
+- [ ] Use `FOR UPDATE SKIP LOCKED` or advisory locks to claim outbox rows and avoid duplicate sends
+- [ ] Add `attempts`, `locked_at`, `locked_by`, `sent_at` columns and exponential backoff
+- [ ] Route publish failures to DLQ (`loan-events-dlq`) and expose metrics/alerts
+- [ ] Partition Kafka by `loanId` to preserve event order per loan
+- [ ] Add outbox cleanup job (TTL) and a maintenance endpoint/command
+
+### API & Domain Enhancements (new)
+- [ ] Add GET endpoints: `/loans/{id}`, `/loans?status=&customerId=&page=`
+- [ ] RFC7807 ProblemDetails for errors; consistent error contract
+- [ ] Idempotency on mutating endpoints via `Idempotency-Key` + server-side tokens
+- [ ] Validation hardening (ranges, term limits); boundary tests
+- [ ] Extend OpenAPI spec to all endpoints with schemas and examples
+
+### Data & Migrations (new)
+- [ ] Add DB indexes: `(status)`, `(customer_id)`, `(created_at)` where applicable
+- [ ] Add constraints (non-negative amounts, valid status transitions via check constraints where possible)
+- [ ] Flyway V2 migration for new columns (outbox reliability) and indexes
+
+### Notification Service (new)
+- [ ] Parse messages to structured objects and log normalized fields
+- [ ] Add error handling with `@RetryableTopic` or `SeekToCurrentErrorHandler` → DLQ on poison pills
+- [ ] Optionally write compacted materialized state to a cache or expose a simple query endpoint
+
+### Performance & Resilience (new)
+- [ ] Load tests (k6/Locust) for 95th latency and throughput; include Kafka publish latency
+- [ ] Chaos experiments: kill Kafka/Postgres during flows; verify retries and no data loss
+- [ ] Batch publishing in poller and tune batch size/interval
+
+### Developer Experience (new)
+- [ ] Make targets: `make e2e` (TS), `make e2e-java`, `make fmt`, `make lint`
+- [ ] Pre-commit hooks for Java/TS formatting and lint
+- [ ] Devcontainers (VS Code) with JDK 21, Node, Docker-in-Docker for Testcontainers
+- [ ] Postman/Insomnia collection and simple CLI script for flows
+
+## Progress Log
 
 ## Detailed Implementation Plan
 
@@ -145,6 +215,7 @@ Flagd <-> OpenFeature (loan-api)
 - [x] 2025‑09‑11: Enabled Spring Boot fat JARs; added local profile with H2; guarded Outbox poller.
 - [x] 2025‑09‑11: Added initial unit/web tests (service, controller, outbox poller); configured Surefire; tests green.
 - [x] 2025‑09‑11: Added README and GitHub Actions CI.
+- [x] 2025‑09‑11: Refactored TS e2e into BDD-style steps and added reusable utils (env/db/kafka/logs).
 
 ## Current State
 - Multi-module scaffold in place; compiles expected with Java 25 + Spring Boot 4.0.

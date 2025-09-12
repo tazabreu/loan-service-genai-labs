@@ -7,6 +7,7 @@ import com.example.loan.events.LoanEvents;
 import com.example.loan.events.model.LoanEventsPayloads;
 import com.example.loan.events.model.LoanStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,10 +23,12 @@ public class LoanService {
     private final OutboxWriter outbox;
     private final ObjectMapper mapper;
     private final BigDecimal approvalThreshold;
+    private final MeterRegistry meterRegistry;
 
     public LoanService(LoanRepository repo, OutboxWriter outbox, ObjectMapper mapper,
-                       @Value("${loan.approval.threshold:10000}") BigDecimal approvalThreshold) {
-        this.repo = repo; this.outbox = outbox; this.mapper = mapper; this.approvalThreshold = approvalThreshold;
+                       @Value("${loan.approval.threshold:10000}") BigDecimal approvalThreshold,
+                       MeterRegistry meterRegistry) {
+        this.repo = repo; this.outbox = outbox; this.mapper = mapper; this.approvalThreshold = approvalThreshold; this.meterRegistry = meterRegistry;
     }
 
     @Transactional
@@ -44,16 +47,19 @@ public class LoanService {
         repo.save(e);
 
         writeEvent(new LoanEventsPayloads.LoanSimulatedEvent(id, amount, termMonths, rate, customerId, now, LoanStatus.SIMULATED));
+        incStatusMetric(LoanStatus.SIMULATED);
 
         if (manualApprovalEnabled && amount.compareTo(approvalThreshold) > 0) {
             e.setStatus(LoanStatus.PENDING_APPROVAL);
             repo.save(e);
             writeEvent(new LoanEventsPayloads.LoanPendingApprovalEvent(id, amount, customerId, Instant.now()));
+            incStatusMetric(LoanStatus.PENDING_APPROVAL);
         } else {
             e.setStatus(LoanStatus.APPROVED);
             e.setApprovedAt(Instant.now());
             repo.save(e);
             writeEvent(new LoanEventsPayloads.LoanApprovedEvent(id, "system", e.getApprovedAt()));
+            incStatusMetric(LoanStatus.APPROVED);
         }
         return LoanMapper.toDomain(e);
     }
@@ -73,10 +79,12 @@ public class LoanService {
             e.setApprovedAt(Instant.now());
             repo.save(e);
             writeEvent(new LoanEventsPayloads.LoanApprovedEvent(id, user, e.getApprovedAt()));
+            incStatusMetric(LoanStatus.APPROVED);
         } else {
             e.setStatus(LoanStatus.REJECTED);
             repo.save(e);
             writeEvent(new LoanEventsPayloads.LoanRejectedEvent(id, user, Optional.ofNullable(reason).orElse("unspecified"), Instant.now()));
+            incStatusMetric(LoanStatus.REJECTED);
         }
         return LoanMapper.toDomain(e);
     }
@@ -89,6 +97,7 @@ public class LoanService {
         e.setContractedAt(Instant.now());
         repo.save(e);
         writeEvent(new LoanEventsPayloads.LoanContractedEvent(id, e.getContractedAt()));
+        incStatusMetric(LoanStatus.CONTRACTED);
         return LoanMapper.toDomain(e);
     }
 
@@ -100,6 +109,7 @@ public class LoanService {
         e.setDisbursedAt(Instant.now());
         repo.save(e);
         writeEvent(new LoanEventsPayloads.LoanDisbursedEvent(id, e.getDisbursedAt()));
+        incStatusMetric(LoanStatus.DISBURSED);
         return LoanMapper.toDomain(e);
     }
 
@@ -112,7 +122,10 @@ public class LoanService {
         if (newBal.signum() < 0) throw new IllegalArgumentException("payment exceeds balance");
         e.setRemainingBalance(newBal);
         e.setLastPaymentAt(Instant.now());
-        if (newBal.signum() == 0) e.setStatus(LoanStatus.PAID);
+        if (newBal.signum() == 0) {
+            e.setStatus(LoanStatus.PAID);
+            incStatusMetric(LoanStatus.PAID);
+        }
         repo.save(e);
         writeEvent(new LoanEventsPayloads.LoanPaymentMadeEvent(id, amount, newBal, e.getLastPaymentAt()));
         return LoanMapper.toDomain(e);
@@ -125,5 +138,10 @@ public class LoanService {
             throw new RuntimeException(ex);
         }
     }
-}
 
+    private void incStatusMetric(LoanStatus status) {
+        try {
+            meterRegistry.counter("loan_status_transitions_total", "status", status.name()).increment();
+        } catch (Exception ignored) {}
+    }
+}

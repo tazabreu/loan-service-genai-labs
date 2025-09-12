@@ -4,6 +4,7 @@ import com.example.loan.api.persistence.OutboxEventEntity;
 import com.example.loan.api.persistence.OutboxEventRepository;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.jupiter.api.Test;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.springframework.kafka.core.KafkaTemplate;
 
 import java.time.Instant;
@@ -32,7 +33,7 @@ class OutboxPollerTest {
         when(repo.findTop100BySentFalseOrderByCreatedAtAsc()).thenReturn(List.of(e));
         when(kafka.send(any(ProducerRecord.class))).thenReturn(completableFuture());
 
-        OutboxPoller poller = new OutboxPoller(repo, kafka);
+        OutboxPoller poller = new OutboxPoller(repo, kafka, new SimpleMeterRegistry());
         poller.publishBatch();
 
         verify(kafka, times(1)).send(any(ProducerRecord.class));
@@ -47,4 +48,3 @@ class OutboxPollerTest {
         return f;
     }
 }
-

@@ -1,0 +1,43 @@
+{
+  "title": "Loan System Overview",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "10s",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "JVM Threads (loan-api)",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "jvm_threads_live_threads{instance=\"loan-api:8081\"}", "legendFormat": "live" },
+        { "expr": "jvm_threads_daemon_threads{instance=\"loan-api:8081\"}", "legendFormat": "daemon" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "HTTP Server Requests (loan-api)",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "rate(http_server_requests_seconds_count{instance=\"loan-api:8081\"}[1m])", "legendFormat": "{{method}} {{uri}} {{status}}" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Kafka Consumer Lag (notif) - placeholder",
+      "description": "Requires metrics exposure; placeholder graph",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "targets": [ { "expr": "vector(0)" } ]
+    },
+    {
+      "type": "logs",
+      "title": "Notification Logs",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "options": { "dedupStrategy": "none" },
+      "targets": [
+        { "datasource": { "type": "loki", "uid": "Loki" }, "expr": "{service=\"loan-notification-service\"}" }
+      ]
+    }
+  ],
+  "templating": { "list": [] }
+}
+

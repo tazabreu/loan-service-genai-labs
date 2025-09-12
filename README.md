@@ -30,6 +30,14 @@ docker compose -f docker/docker-compose.yml down -v
 - Prometheus: http://localhost:9090
  - Kafka (outside listener): localhost:19092
 
+Observability
+- Traces: OpenTelemetry Java agent auto-instrumentation exports to Alloy (OTLP), then to Tempo
+- Metrics: Spring Boot Actuator Prometheus endpoint scraped by Prometheus
+- Logs: JSON container logs scraped by Promtail into Loki
+- Grafana is pre-provisioned with Prometheus/Loki/Tempo datasources and a starter dashboard
+  - Login: admin / admin (default)
+  - Dashboard: Loan System Overview
+
 ### Local Smoke Test
 Runs simulate → contract → disburse → pay, then prints DB rows and consumer logs.
 ```bash
@@ -49,6 +57,9 @@ npm ci
 npm run e2e:local     # up + wait + tests + down
 # or, keep stack running:
 npm run e2e:local:keep
+# Makefile aliases from repo root:
+make e2e            # runs the TS e2e (up+wait+tests+down)
+make e2e-ts-keep    # keeps the stack up after tests
 ```
 Defaults:
 - API `http://localhost:8081` | Postgres `localhost:5432` | Kafka `localhost:19092`
@@ -100,3 +111,6 @@ mvn -pl loan-api -am test
 
 ## Feature Flags
 - OpenFeature + Flagd: `manual-approval-enabled` boolean influences simulation outcome.
+Why TS e2e?
+- Canonical black-box tests covering API → DB → Kafka → logs
+- Java module-level integration tests remain for focused domain/outbox behavior

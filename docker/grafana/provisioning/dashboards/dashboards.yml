@@ -1,0 +1,11 @@
+apiVersion: 1
+providers:
+  - name: 'loan-system'
+    orgId: 1
+    folder: 'Loan System'
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards
+

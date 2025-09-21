@@ -23,7 +23,7 @@ services:
       - "19092:19092"
   flagd:
     image: ghcr.io/open-feature/flagd:latest
-    command: ["start", "--uri", "/flags/flags.json"]
+    command: ["start", "--uri", "file:///flags/flags.json"]
     volumes:
       - ./flags:/flags
     ports:

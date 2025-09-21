@@ -1,5 +1,5 @@
 # Java/Maven
-target/
+**/target/
 *.iml
 .idea/
 .project
@@ -13,8 +13,7 @@ target/
 .mvn/wrapper/maven-wrapper.jar
 
 # Node/TS
-node_modules/
-e2e/node_modules/
-e2e/dist/
-e2e/.env
-e2e/junit.xml
+**/node_modules/
+e2e-tests/dist/
+e2e-tests/.env
+e2e-tests/junit.xml

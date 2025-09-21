@@ -1,0 +1,44 @@
+@apiBase = http://localhost:8081
+@customerId = manual-http-{{$isoTimestamp}}
+@principal = {{$randomInt 5000 15000}}
+@payment = {{$randomInt 500 2000}}
+
+### Simulate a new loan
+# @name simulateLoan
+POST {{apiBase}}/loans/simulate
+Content-Type: application/json
+
+{
+  "amount": {{principal}},
+  "termMonths": 12,
+  "interestRate": 0.12,
+  "customerId": "{{customerId}}"
+}
+
+### Approve the loan (only required when manual approval flag is enabled)
+# @name approveLoan
+POST {{apiBase}}/loans/{{simulateLoan.response.body.id}}/approve
+Content-Type: application/json
+X-User: qa-agent
+
+{}
+
+### Contract the loan
+# @name contractLoan
+POST {{apiBase}}/loans/{{simulateLoan.response.body.id}}/contract
+
+### Disburse funds
+# @name disburseLoan
+POST {{apiBase}}/loans/{{simulateLoan.response.body.id}}/disburse
+
+### Register a repayment
+# @name repayLoan
+POST {{apiBase}}/loans/{{simulateLoan.response.body.id}}/pay
+Content-Type: application/json
+
+{
+  "amount": {{payment}}
+}
+
+### API health check
+GET {{apiBase}}/actuator/health

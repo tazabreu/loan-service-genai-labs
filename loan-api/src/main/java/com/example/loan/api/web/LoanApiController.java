@@ -11,7 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
-import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -51,6 +50,4 @@ public class LoanApiController {
     @PostMapping("/{id}/pay")
     public Loan pay(@PathVariable("id") UUID id, @RequestBody @Valid PaymentRequest req) { return service.pay(id, req.amount()); }
 
-    @GetMapping("/healthz")
-    public Map<String, String> health() { return Map.of("status", "ok"); }
 }

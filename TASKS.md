@@ -1,259 +1,57 @@
 # TASKS
 
-This file is our working memory bank. We track the plan, decisions, and progress as checkable tasks. Update it as steps complete.
+We trimmed the historical prompt and backlog after reviewing the codebase. Focus on the three priorities below before reintroducing any other workstreams.
 
-## Working Prompt
-- Loan Management System implementation plan for two Spring Boot 4.0 microservices (loan-api and loan-notification-service) with PostgreSQL, Redpanda, OpenTelemetry, Grafana Stack, Flagd, thorough testing, Docker Compose, GraalVM native images, and CI/CD readiness.
+## Priority 1 – Outbox reliability guardrails
+**Objective:** make event publishing resilient to retries, process crashes, and downstream outages.
+**Gaps observed:**
+- `loan-api/src/main/java/com/example/loan/api/config/OutboxPoller.java` fetches unsent events without locking, so multiple pollers can double-send the same rows.
+- Outbox records have no attempt counters, next-at timestamps, or error details, causing hot loops on permanent failures.
+- Failed events never route to `LoanEvents.DLQ_TOPIC`, so poison messages block progress indefinitely.
+- There is no retention policy; `outbox_event` grows unbounded after successful sends.
+**Implementation plan:**
+1. Add Flyway migration `loan-api/src/main/resources/db/migration/V2__outbox_reliability.sql` with `attempt_count`, `next_attempt_at`, `last_error`, `sent_at`, and optional `locked_by`, plus supporting indexes.
+2. Extend `OutboxEventEntity` and `OutboxEventRepository` with the new columns and a native `FOR UPDATE SKIP LOCKED` query that respects `next_attempt_at` and a configurable batch size.
+3. Refactor `OutboxPoller` to use the locking query, wrap each send in a producer span, update attempt metadata, compute exponential backoff, and publish to `LoanEvents.DLQ_TOPIC` once `attempt_count` exceeds a configurable ceiling.
+4. Emit metrics (`loan_outbox_publish_success_total`, `loan_outbox_retry_total`, `loan_outbox_dlq_total`) and structured logs for both success and DLQ paths; expose new properties (`outbox.max-attempts`, `outbox.initial-backoff-ms`, `outbox.cleanup-after-days`).
+5. Add a scheduled cleanup component that deletes or archives rows older than the retention window once `sent=true`.
+**Validation & rollout:**
+- Extend `loan-api/src/test/java/com/example/loan/api/config/OutboxPollerTest.java` to cover retry, DLQ, and cleanup paths, and add a Testcontainers-based regression (`loan-api/src/test/java/.../OutboxPollerRetryIT.java`) that simulates Kafka outages.
+- Update manual HTTP collections and README to document the new env vars, migration sequencing, and DLQ expectations.
 
-## Goals
-- Deliver a concise, verifiable implementation aligned with the provided prompt.
-- Maintain 12‑factor practices, tests, and clear developer ergonomics.
+## Priority 2 – Traceable event pipeline
+**Objective:** provide end-to-end trace, metric, and log correlation from HTTP request through Kafka to the notification logs.
+**Gaps observed:**
+- The poller writes a `traceparent` header manually but the consumer never extracts it, so traces stop at the producer span.
+- `loan-notification-service/src/main/java/com/example/loan/notification/LoanEventsConsumer.java` logs raw JSON without trace or loan identifiers, making incident triage difficult.
+- Neither service emits per-event metrics (latency, failures, message type throughput).
+- Logback JSON encoders omit MDC fields, so even with an OTel agent the trace identifiers never reach Loki.
+**Implementation plan:**
+1. Replace the manual header code in `OutboxPoller` with `W3CTraceContextPropagator` injection, set span attributes (`loan.id`, `loan.event_type`, `kafka.topic`), and surface the current trace id in MDC before logging.
+2. Change the consumer signature to accept `ConsumerRecord<String, String>`, use the W3C propagator to extract the context, start a `SpanKind.CONSUMER` span, and parse the payload to push `loan_id`, `event_type`, and `trace_id` into MDC.
+3. Register Micrometer timers and counters in both services (`loan_events_publish_latency`, `loan_events_consume_latency`, `loan_events_consume_failures`) and expose them via Actuator/Prometheus.
+4. Update `logback-spring.xml` in both services to include MDC providers for `trace_id`, `span_id`, `loan_id`, and to redact large payloads via size caps.
+5. Add Grafana dashboards (`dashboards/loan-pipeline.json`) showcasing trace-to-log navigation, DLQ size, and per-event throughput; document troubleshooting steps in README.
+**Validation & rollout:**
+- Enhance `LoanEventsConsumerTest` to assert MDC enrichment, and add an integration test (`loan-notification-service/src/test/java/.../LoanEventsTracingIT.java`) verifying trace continuity using Testcontainers.
+- Expand `manual-tests/loan-lifecycle.http` to capture the trace id and show how to locate the matching log entry in Grafana.
 
-## Assumptions (to confirm)
-- Primary stack (Python or Node) will be specified with the prompt.
-- Acceptance criteria will be explicit and testable.
+## Priority 3 – JVM-native end-to-end tests
+**Objective:** retire the standalone TypeScript/Jest harness and run full life-cycle tests inside Maven for a simpler, hermetic pipeline.
+**Gaps observed:**
+- The `e2e-tests/` folder duplicates fixtures, requires Node tooling, and is not exercised by `mvn test`, so CI can pass while end-to-end flows break.
+- Scenario coverage (manual approval, negative paths, log assertions) would be faster and easier to maintain if they reused existing Spring beans and repositories.
+- Developers must context-switch across languages to debug failures, increasing ramp-up time.
+**Implementation plan:**
+1. Introduce a new Maven module `system-tests` using JUnit 5, Spring Boot test slices, and Testcontainers (`PostgreSQLContainer`, `RedpandaContainer`, `GenericContainer` for Flagd) to host external dependencies.
+2. Spin up `loan-api` and `loan-notification-service` inside the same JVM via `SpringBootTest` with dynamic properties pointing at the containers; reuse repositories to assert database state and captured logs.
+3. Port the existing Jest scenarios (simulate auto approval, manual approval, contract/disburse/pay, negative transitions) into parameterized `@Test` cases that drive the HTTP layer with `WebTestClient` and assert Kafka/log outcomes with Awaitility.
+4. Add optional log capture (ListAppender or Loki API client) to validate structured log fields emitted by Priority 2, and expose helper utilities for future scenarios.
+5. Update GitHub Actions workflow to run `mvn -pl system-tests test` in CI, document new commands in README, and archive/remove the `e2e-tests/` Node project once the JVM suite is green and equivalent.
+**Validation & rollout:**
+- Measure runtime (target <5 minutes) and tune container reuse; publish a quick-start guide under `docs/testing.md` describing how to run the suite with or without Docker.
 
-## Implementation Plan (high‑level)
-1) Architecture & tech stack decisions
-2) Project scaffolding (Maven multi-module)
-3) Domain, persistence, and API (loan-api)
-4) Outbox pattern and Kafka publishing
-5) Notification consumer (loan-notification-service)
-6) Observability (metrics, logs, traces, dashboards)
-7) Testing (unit, integration, e2e, mutation)
-8) Local run (Docker Compose) and docs
-9) CI/CD and Kubernetes manifests
-
-## Task List
-- [x] Receive target prompt from user
-- [x] Freeze scope, constraints, and assumptions
-- [x] Define acceptance criteria and test plan (from prompt)
-- [x] Draft detailed implementation plan (this file)
-- [ ] Design components and data flows (ASCII diagram)
-- [x] Scaffold Maven multi-module: parent, `loan-api`, `loan-notification-service`, `loan-events`
-- [x] Add core dependencies (Spring Boot 4.0, Kafka, JPA, Validation, Testcontainers, OpenFeature, Springdoc)
-- [x] Define DB schema (Loan, OutboxEvent) and Liquibase/Flyway migrations
-- [x] Implement `loan-events` records (events shared lib)
-- [x] Implement domain + JPA entities + repositories (loan-api)
-- [x] Implement controllers, DTOs, validation, state transitions (loan-api)
-- [x] Implement transactional outbox writer and poller with advisory locks (poller; advisory lock TBD)
-- [x] Configure Kafka topics (`loan-events`, `loan-events-dlq`) and producers
-- [x] Implement loan-notification-service consumer and Loki logging
-- [x] Integrate OpenFeature + Flagd for `manual-approval-enabled`
-- [x] E2E (TypeScript): Compose-backed BDD-style tests asserting API → DB → Kafka → logs
-- [ ] Observability: OTel Java agent config, JSON logs, metrics, tracing to Alloy
-  - [x] Wire OpenTelemetry Java agent into app images
-  - [x] Add Alloy config to receive OTLP and forward to Tempo
-  - [x] Add Promtail to ship container logs to Loki
-  - [x] Provision Grafana datasources (Prometheus, Loki, Tempo) and starter dashboard
-- [x] Docker Compose for all services (Postgres, Redpanda, Flagd, Alloy, Loki, Tempo, Prometheus, Grafana, MinIO, apps)
-- [ ] Unit tests (controllers, services, outbox, consumer) ≥80% coverage
-- [ ] Integration/E2E with Testcontainers (full lifecycle, Awaitility)
-  - [x] Remove duplicate Java E2E module and lifecycle IT; keep focused module ITs
-- [ ] Mutation testing with PITest (≥80% business logic)
-- [x] OpenAPI specs and Springdoc UI (placeholder spec added)
-- [x] README with business context and runbook
-- [x] CI workflow (build, unit/integration, mutation)
-- [ ] GraalVM native profile and Dockerfiles
-- [ ] Kubernetes manifests (ConfigMaps, Secrets, Deployments, Services)
-- [ ] Final review: lint/format, docs, green CI
-
-### E2E and Testing Roadmap (new)
-- [ ] Split TS e2e into focused specs per scenario (simulate, approve/reject, contract, disburse, pay)
-- [ ] Negative-path e2e: invalid transitions, overpayment, zero/negative amounts, unknown id (404), validation errors
-- [ ] Manual-approval path e2e by toggling Flagd; assert PENDING_APPROVAL and approve/reject flows
-- [ ] Event ordering e2e: ensure monotonic state transitions per loan id (single partition key)
-- [ ] Idempotency e2e: repeat POSTs with `Idempotency-Key` (after feature added)
-- [ ] Make TS e2e read logs via Loki API instead of `docker compose logs` for portability
-- [ ] Java Testcontainers: add CDC-style message contract tests for `loan-events` payloads
-- [ ] Java ITs: add Awaitility-based DB/Kafka assertions and consumer error path tests
-
-### CI/CD Enhancements (new)
-- [ ] Add GitHub Actions job to run TS e2e against a compose stack (services: Postgres, Redpanda, Flagd)
-- [ ] Add job to run `e2e-tests` (JUnit + Testcontainers) with Docker available on runner
-- [ ] Publish multi-arch Docker images on tags/merge to main; use buildx cache
-- [ ] Add vulnerability scanning (Trivy or Grype) for built images
-- [ ] Cache Maven/Node deps and Docker layers for faster CI
-
-### Observability Roadmap (new)
-- [ ] Bundle and mount OpenTelemetry Java agent in Compose; set `JAVA_TOOL_OPTIONS=-javaagent:/otel/opentelemetry-javaagent.jar`
-  - [x] Implemented via Dockerfiles + Alloy pipeline to Tempo
-- [ ] Configure sampling and resource attributes (service.name, env) for both services
-- [ ] Provision Grafana datasources (Prometheus, Loki, Tempo) and import starter dashboards under `dashboards/`
-  - [x] Added provisioning and a starter overview dashboard
-- [ ] Add domain metrics: loans_by_status, outbox_batch_size, outbox_failures_total
-- [ ] Correlate logs with trace/span ids end-to-end; add trace id to outgoing Kafka headers
-- [ ] Add `/readyz` with checks for DB and Kafka connectivity
-
-### Messaging & Outbox Reliability (new)
-- [ ] Use `FOR UPDATE SKIP LOCKED` or advisory locks to claim outbox rows and avoid duplicate sends
-- [ ] Add `attempts`, `locked_at`, `locked_by`, `sent_at` columns and exponential backoff
-- [ ] Route publish failures to DLQ (`loan-events-dlq`) and expose metrics/alerts
-- [ ] Partition Kafka by `loanId` to preserve event order per loan
-- [ ] Add outbox cleanup job (TTL) and a maintenance endpoint/command
-
-### API & Domain Enhancements (new)
-- [ ] Add GET endpoints: `/loans/{id}`, `/loans?status=&customerId=&page=`
-- [ ] RFC7807 ProblemDetails for errors; consistent error contract
-- [ ] Idempotency on mutating endpoints via `Idempotency-Key` + server-side tokens
-- [ ] Validation hardening (ranges, term limits); boundary tests
-- [ ] Extend OpenAPI spec to all endpoints with schemas and examples
-
-### Data & Migrations (new)
-- [ ] Add DB indexes: `(status)`, `(customer_id)`, `(created_at)` where applicable
-- [ ] Add constraints (non-negative amounts, valid status transitions via check constraints where possible)
-- [ ] Flyway V2 migration for new columns (outbox reliability) and indexes
-
-### Notification Service (new)
-- [ ] Parse messages to structured objects and log normalized fields
-- [ ] Add error handling with `@RetryableTopic` or `SeekToCurrentErrorHandler` → DLQ on poison pills
-- [ ] Optionally write compacted materialized state to a cache or expose a simple query endpoint
-
-### Performance & Resilience (new)
-- [ ] Load tests (k6/Locust) for 95th latency and throughput; include Kafka publish latency
-- [ ] Chaos experiments: kill Kafka/Postgres during flows; verify retries and no data loss
-- [ ] Batch publishing in poller and tune batch size/interval
-
-### Developer Experience (new)
-- [ ] Make targets: `make e2e` (TS), `make e2e-java`, `make fmt`, `make lint`
-- [ ] Pre-commit hooks for Java/TS formatting and lint
-- [ ] Devcontainers (VS Code) with JDK 21, Node, Docker-in-Docker for Testcontainers
-- [ ] Postman/Insomnia collection and simple CLI script for flows
-
-## Progress Log
-
-## Detailed Implementation Plan
-
-### Architecture Overview
-- Services: `loan-api` (REST + PostgreSQL + transactional outbox) and `loan-notification-service` (Kafka consumer -> Loki logs).
-- Data flow: Requests -> `loan-api` domain -> persist `Loan` + `OutboxEvent` (same tx) -> outbox poller publishes to Redpanda topic `loan-events` -> notification service consumes -> JSON logs with trace correlation.
-- Observability: OTel Java agent exports to Grafana Alloy (`OTLP http://alloy:4318`), metrics to Prometheus, logs to Loki, traces to Tempo; dashboards in Grafana.
-- Feature flags: OpenFeature + Flagd with `manual-approval-enabled` boolean; threshold via `loan.approval.threshold`.
-
-ASCII diagram
-```
-Client -> loan-api (REST) -> PostgreSQL (Loan, OutboxEvent)
-                         \-> Outbox Poller -> Redpanda (loan-events) -> loan-notification-service -> Loki
-OTel Java Agent -> Alloy -> Prometheus/Loki/Tempo -> Grafana
-Flagd <-> OpenFeature (loan-api)
-```
-
-### Project Structure (Maven multi-module)
-- `pom.xml` (parent: dependencyManagement, plugins, profiles incl. `native`)
-- `loan-events/` (shared records: events, topic names)
-- `loan-api/` (web, validation, jpa, kafka, openfeature, springdoc)
-- `loan-notification-service/` (kafka consumer, logging)
-- `docker/` (compose files, flags.json, grafana dashboards)
-- `scripts/` (dev helpers: `compose-up.sh`, `wait-for.sh`)
-
-### Technical Setup
-- Maven deps: Spring Boot 4.0, `spring-boot-starter-web`, `spring-boot-starter-validation`, `spring-boot-starter-data-jpa`, `spring-kafka`, OpenFeature, Springdoc, Testcontainers (junit, postgres, kafka), Awaitility, Mockito, PITest.
-- Config: `application.yml` + profiles `dev`, `stg`, `prd`. Env vars: `PORT`, `DATABASE_URL`, `SPRING_KAFKA_BOOTSTRAP_SERVERS`, `OTEL_EXPORTER_OTLP_ENDPOINT`, `LOAN_APPROVAL_THRESHOLD`.
-- DB schema:
-  - `loan(id UUID PK, amount NUMERIC, term_months INT, interest_rate NUMERIC, remaining_balance NUMERIC, status TEXT, simulated_at TIMESTAMP, approved_at TIMESTAMP, contracted_at TIMESTAMP, disbursed_at TIMESTAMP, last_payment_at TIMESTAMP, customer_id TEXT)`
-  - `outbox_event(id UUID PK, topic TEXT, event_type TEXT, payload JSONB, created_at TIMESTAMP, sent BOOLEAN DEFAULT FALSE)`
-- Kafka: topics `loan-events` (replication 1, partitions 1 local), `loan-events-dlq`.
-- Outbox poller: `@Scheduled(fixedDelayString = "${outbox.polling.interval:1000}")`, batch publish within transactional producer; advisory lock to serialize workers.
-
-### Functional Breakdown (Endpoints)
-- POST `/loans/simulate` -> simulate; if `manual-approval-enabled` and amount > threshold -> `PENDING_APPROVAL` + `LoanPendingApprovalEvent`; else auto-approve -> `APPROVED` + `LoanSimulatedEvent` + `LoanApprovedEvent`.
-- POST `/loans/{id}/approve` or `/reject` -> validate state `PENDING_APPROVAL`; emit respective event.
-- POST `/loans/{id}/contract` -> requires `APPROVED` -> set `CONTRACTED` + event.
-- POST `/loans/{id}/disburse` -> requires `CONTRACTED` -> set `DISBURSED` + event.
-- POST `/loans/{id}/pay` -> requires `DISBURSED`; apply amount, update `remainingBalance`; if 0 -> `PAID`; emit `LoanPaymentMadeEvent`.
-- Validation: Jakarta annotations; map errors to 400; enforce state machines.
-
-### Observability Plan
-- OTel Java Agent enabled at runtime; JSON logs (Logback encoder) include traceId/spanId.
-- Metrics: HTTP server, JVM, DB, Kafka; custom: `loan_approvals_total`, `loan_payments_total`.
-- Dashboards: import Spring Boot dashboard, Kafka overview, and custom panel for loan metrics.
-- Export to Alloy -> Prometheus/Loki/Tempo; Grafana at `http://localhost:3000`.
-
-### Testing Plan
-- Unit (JUnit5 + Mockito): controllers, services, state transitions, outbox writer, consumer.
-- Integration (Spring Boot Test + Testcontainers: Postgres, Redpanda): repository tests; outbox poller end-to-end publish; notification consumer.
-- E2E: full lifecycle via `TestRestTemplate` against embedded app containers, assert DB, Kafka, and logs presence; use Awaitility for async.
-- Mutation: PITest on domain and state logic (target ≥80%).
-
-### Documentation Plan
-- OpenAPI 3: `src/main/resources/openapi.yaml` per service; serve UI for loan-api.
-- README: personas, lifecycle, outbox rationale, local run with Docker Compose, observability links, troubleshooting.
-- Use Context7 MCP for spec/code sync and to avoid outdated APIs.
-
-### Deployment Plan
-- Docker Compose: services (loan-api:8081, notification:8082), Postgres:5432, Redpanda:9092, Flagd:8013, Alloy:4318, Loki:3100, Tempo:3200, Prometheus:9090, Grafana:3000, MinIO:9000. Resource limits as specified.
-- Production: GraalVM native images (`mvn -Pnative native:compile`), K8s manifests (Deployments, Services, ConfigMaps, Secrets). Flagd metrics scraped by Prometheus.
-
-### Parallel Workflows (for two AIs)
-- Workflow A (loan-api focus): domain, DB, controllers, validation, outbox, Kafka producer, OpenAPI, unit/integration tests, native image.
-- Workflow B (infra/consumer/obs focus): notification consumer, Loki logging, Docker Compose, Grafana/Alloy/Tempo/Prometheus stack, Flagd, CI, dashboards, E2E tests, K8s manifests.
-- Integration checkpoints: event schema contract (`loan-events`), topic/config, compose file, OTel endpoint, env naming.
-
-### Estimated Effort (hours)
-- Setup & scaffolding: 4
-- Domain & persistence (loan-api): 6
-- API + validation + state machine: 8
-- Outbox + Kafka producer + DLQ: 8
-- Notification consumer + logging: 4
-- Observability wiring + dashboards: 6
-- Testing (unit/integration/E2E): 12
-- Mutation testing (PITest): 4
-- Docker Compose + local run: 6
-- Documentation (OpenAPI, README): 5
-- CI + native images + K8s manifests: 6
-- Total: ~69 hours (parallelizable between two workflows)
-
-## Progress Log
-- [x] 2025‑09‑11: Initialized TASKS.md and plan; awaiting prompt.
-- [x] 2025‑09‑11: Received seed prompt; froze scope and constraints.
-- [x] 2025‑09‑11: Drafted detailed plan and roadmap.
-- [x] 2025‑09‑11: Scaffolded modules and core components; initial commit.
-- [x] 2025‑09‑11: Added OpenFeature config, Dockerfiles, compose fixes; second commit.
-- [x] 2025‑09‑11: Added JPA no-args constructors to entities to ensure runtime compatibility.
-- [x] 2025‑09‑11: Configured Maven compiler for Java 21; added Flyway and V1 migration; switched JPA DDL to validate; build succeeded with `-DskipTests`.
-- [x] 2025‑09‑11: Added JSON logging, Actuator, Prometheus registry; Prometheus scrape config in Compose.
-- [x] 2025‑09‑11: Enabled Spring Boot fat JARs; added local profile with H2; guarded Outbox poller.
-- [x] 2025‑09‑11: Added initial unit/web tests (service, controller, outbox poller); configured Surefire; tests green.
-- [x] 2025‑09‑11: Added README and GitHub Actions CI.
-- [x] 2025‑09‑11: Refactored TS e2e into BDD-style steps and added reusable utils (env/db/kafka/logs).
-
-## Current State
-- Multi-module scaffold in place; compiles expected with Java 25 + Spring Boot 4.0.
-- Docker Compose defined for local run; requires Docker and network to pull images.
-- OpenAPI placeholder and basic observability hooks configured.
-
-## Next Steps (Build & Run Verification)
-- [x] Build: `mvn -DskipTests package` (fetch deps, compile, package)
-- [ ] Quick run smoke for loan-api: start with local Postgres via Docker Compose or set a temporary in-memory profile (optional).
-- [ ] If Docker available: `docker compose -f docker/docker-compose.yml up --build -d` and verify health endpoints.
-- [ ] Log results here and commit a checkpoint.
-- [x] 2025‑09‑11: Scaffolded modules and core components; initial commit.
-- [x] 2025‑09‑11: Added OpenFeature config, Dockerfiles, compose fixes; second commit.
-
-## Open Questions
-- What is the exact prompt/problem statement?
-- Target environment (Docker? Cloud runtime?) and data sources?
-- Any performance/SLO requirements?
-
-## Future improvements, as of 11 Sep 2025
-- Outbox reliability
-  - Add in-flight marker, attempt counter/backoff, sent_at; periodic cleanup.
-  - Use DB advisory locks to avoid concurrent pollers double-sending.
-- Messaging and DLQ
-  - Dead-letter publishing with recoverer; poison-pill detection and metrics.
-  - Ensure partitioning by loan id for ordering guarantees.
-- API and domain
-  - Idempotency for mutating operations (`Idempotency-Key`).
-  - Read endpoints (GET by id/list with pagination); standard problem+json errors.
-- Observability
-  - Ship OTel Java agent by default in Compose; add domain metrics (e.g., loans_by_status, outbox_batch_size).
-  - Preload Grafana dashboards; wire Loki/Tempo datasources.
-- Data and schema
-  - Versioned event schema (Avro/JSON Schema/Protobuf) with registry; codegen.
-  - Additional DB indexes for common filters (status, customer_id).
-- Testing
-  - Expand unit/integration to ≥80%; concurrency tests for poller; consumer error-path tests.
-  - PITest mutation coverage ≥80% on business logic.
-- Delivery
-  - GraalVM native profiles and Dockerfiles; multi-arch builds and image scanning.
-  - Kubernetes manifests (ConfigMaps/Secrets/Deployments/Services) with probes.
+## Parking lot
+- Idempotency keys for POST/PUT endpoints once the outbox pipeline is hardened.
+- Schema registry or JSON Schema validation for `loan-events` after DLQ observability work lands.
+- Kubernetes manifests and GraalVM native images remain out of scope until the above priorities stabilize.
